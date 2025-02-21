@@ -1,4 +1,4 @@
-package go_event_store
+package eventstore
 
 type ConsumerFunc[E any] func(e E)
 

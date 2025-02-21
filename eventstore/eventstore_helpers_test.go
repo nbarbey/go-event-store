@@ -1,4 +1,4 @@
-package go_event_store_test
+package eventstore_test
 
 import (
 	"context"

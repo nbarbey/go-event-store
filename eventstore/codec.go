@@ -1,4 +1,4 @@
-package go_event_store
+package eventstore
 
 import "encoding/json"
 

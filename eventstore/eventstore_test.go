@@ -1,8 +1,8 @@
-package go_event_store_test
+package eventstore_test
 
 import (
 	"context"
-	ges "github.com/nbarbey/go-event-store"
+	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"log"
@@ -17,7 +17,7 @@ func TestEventStore(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	es, err := ges.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
+	es, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and get all", func(t *testing.T) {
@@ -66,7 +66,7 @@ func TestEventStore_custome_events(t *testing.T) {
 	type MyEvent struct {
 		Name string
 	}
-	es, err := ges.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
+	es, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
@@ -86,11 +86,11 @@ func TestEventStore_custome_events(t *testing.T) {
 	})
 }
 
-func makeTestConsumer[E any](received *E) ges.ConsumerFunc[E] {
+func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
 	return func(e E) { *received = e }
 }
 
-func startTestEventStore[E any](t *testing.T, es *ges.EventStore[E]) {
+func startTestEventStore[E any](t *testing.T, es *eventstore.EventStore[E]) {
 	require.NoError(t, es.Start(context.Background()))
 	// give time for listener to be set-up properly
 	time.Sleep(10 * time.Millisecond)
