@@ -45,4 +45,18 @@ func TestEventStore(t *testing.T) {
 			return assert.Equal(t, `"my_event_data"`, string(received))
 		}, time.Second, 10*time.Millisecond)
 	})
+	t.Run("publish to some stream", func(t *testing.T) {
+		var received []byte
+		es.Stream("default-stream").Subscribe(makeTestConsumer(&received))
+		require.NoError(t, es.Start(context.Background()))
+		defer es.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
+
+		require.NoError(t, es.Stream("default-stream").Publish([]byte(`"my_event_data"`)))
+
+		assert.Eventually(t, func() bool {
+			return assert.Equal(t, `"my_event_data"`, string(received))
+		}, time.Second, 10*time.Millisecond)
+	})
 }
