@@ -21,7 +21,7 @@ func (e EventStore) Publish(bytes []byte) error {
 }
 
 func (e EventStore) All() ([][]byte, error) {
-	rows, err := e.connection.Query(context.Background(), "select * from events")
+	rows, err := e.connection.Query(context.Background(), "select payload from events")
 	if err != nil {
 		return nil, err
 	}
