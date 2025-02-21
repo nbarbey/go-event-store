@@ -17,7 +17,7 @@ func (s Stream[E]) Publish(bytes []byte) error {
 	return err
 }
 
-func (s Stream[E]) Subscribe(consumer ConsumerFunc[E]) {
+func (s Stream[E]) Subscribe(consumer ConsumerFunc[[]byte]) {
 	s.eventStore.listener.Handle(s.name, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		consumer.Consume([]byte(notification.Payload))
 		return nil

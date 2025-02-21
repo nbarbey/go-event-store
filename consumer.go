@@ -1,11 +1,11 @@
 package go_event_store
 
-type ConsumerFunc[E any] func(e []byte)
+type ConsumerFunc[E any] func(e E)
 
 type Consumer[E any] interface {
-	Consume(e []byte)
+	Consume(e E)
 }
 
-func (f ConsumerFunc[E]) Consume(e []byte) {
+func (f ConsumerFunc[E]) Consume(e E) {
 	f(e)
 }

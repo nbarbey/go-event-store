@@ -39,7 +39,7 @@ func (e EventStore[E]) All() ([]E, error) {
 	return output, nil
 }
 
-func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
+func (e EventStore[E]) Subscribe(consumer Consumer[[]byte]) {
 	e.listener.Handle(defaultStream, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		consumer.Consume([]byte(notification.Payload))
 		return nil
