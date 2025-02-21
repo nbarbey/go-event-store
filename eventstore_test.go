@@ -9,10 +9,15 @@ import (
 	"time"
 )
 
+func makeTestConsumer(received *[]byte) ges.ConsumerFunc {
+	return func(e []byte) { *received = e }
+}
+
 func TestEventStore(t *testing.T) {
 	postgresContainer, err := runTestContainer()
 	require.NoError(t, err)
 	defer postgresContainer.Cancel()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	es, err := ges.NewEventStore(ctx, postgresContainer.ConnectionString(t))
@@ -28,12 +33,9 @@ func TestEventStore(t *testing.T) {
 	})
 	t.Run("subscribe then publish", func(t *testing.T) {
 		var received []byte
-		es.Subscribe(ges.ConsumerFunc(func(e []byte) {
-			received = e
-		}))
+		es.Subscribe(makeTestConsumer(&received))
 		require.NoError(t, es.Start(context.Background()))
 		defer es.Stop()
-
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
