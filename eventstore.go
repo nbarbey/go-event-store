@@ -22,14 +22,14 @@ func (e EventStore[E]) Publish(event E) error {
 	return err
 }
 
-func (e EventStore[E]) All() ([][]byte, error) {
+func (e EventStore[E]) All() ([]E, error) {
 	rows, err := e.connection.Query(context.Background(), "select payload from events")
 	if err != nil {
 		return nil, err
 	}
-	output := make([][]byte, 0)
+	output := make([]E, 0)
 	for rows.Next() {
-		var current []byte
+		var current E
 		rowErr := rows.Scan(&current)
 		if rowErr != nil {
 			return nil, rowErr
