@@ -9,6 +9,8 @@ import (
 	"os"
 )
 
+var defaultStream = "events-channel"
+
 type EventStore struct {
 	connection *pgx.Conn
 	listener   *pgxlisten.Listener
@@ -16,7 +18,7 @@ type EventStore struct {
 }
 
 func (e EventStore) Publish(bytes []byte) error {
-	_, err := e.connection.Exec(context.Background(), "insert into events values ($1)", bytes)
+	_, err := e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, bytes)
 	return err
 }
 
@@ -38,7 +40,7 @@ func (e EventStore) All() ([][]byte, error) {
 }
 
 func (e EventStore) Subscribe(consumer Consumer) {
-	e.listener.Handle("events-channel", pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
+	e.listener.Handle(defaultStream, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		consumer.Consume([]byte(notification.Payload))
 		return nil
 	}))
@@ -64,7 +66,7 @@ func NewEventStore(ctx context.Context, connStr string) (*EventStore, error) {
 		return nil, err
 	}
 
-	_, err = conn.Exec(ctx, "create table if not exists events (payload jsonb)")
+	_, err = conn.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
 	if err != nil {
 		return nil, err
 	}
