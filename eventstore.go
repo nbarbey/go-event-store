@@ -17,8 +17,8 @@ type EventStore[E any] struct {
 	cancelFunc context.CancelFunc
 }
 
-func (e EventStore[E]) Publish(bytes []byte) error {
-	_, err := e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, bytes)
+func (e EventStore[E]) Publish(event E) error {
+	_, err := e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, event)
 	return err
 }
 
