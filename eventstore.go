@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-var defaultStream = "events-channel"
+var defaultStream = "default-stream"
 
 type EventStore struct {
 	connection *pgx.Conn
