@@ -2,6 +2,7 @@ package go_event_store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -18,7 +19,11 @@ type EventStore[E any] struct {
 }
 
 func (e EventStore[E]) Publish(event E) error {
-	_, err := e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, event)
+	data, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+	_, err = e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, data)
 	return err
 }
 
@@ -29,19 +34,29 @@ func (e EventStore[E]) All() ([]E, error) {
 	}
 	output := make([]E, 0)
 	for rows.Next() {
-		var current E
-		rowErr := rows.Scan(&current)
+		var payload []byte
+		rowErr := rows.Scan(&payload)
 		if rowErr != nil {
 			return nil, rowErr
 		}
-		output = append(output, current)
+		var event E
+		err = json.Unmarshal(payload, &event)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, event)
 	}
 	return output, nil
 }
 
-func (e EventStore[E]) Subscribe(consumer Consumer[[]byte]) {
+func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
 	e.listener.Handle(defaultStream, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		consumer.Consume([]byte(notification.Payload))
+		var event E
+		err := json.Unmarshal([]byte(notification.Payload), &event)
+		if err != nil {
+			return err
+		}
+		consumer.Consume(event)
 		return nil
 	}))
 }
