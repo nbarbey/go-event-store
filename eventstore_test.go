@@ -57,6 +57,26 @@ func TestEventStore(t *testing.T) {
 			return "my_event_data" == string(received) && len(receivedOther) == 0
 		}, time.Second, 10*time.Millisecond)
 	})
+	t.Run("publish and subscribe to custom event", func(t *testing.T) {
+		type MyEvent struct {
+			Name string
+		}
+		eventStore, err := ges.NewEventStore[MyEvent](ctx, postgresContainer.ConnectionString(t))
+		require.NoError(t, err)
+
+		var received MyEvent
+		myStream := eventStore.Stream("my-event-stream")
+		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
+
+		startTestEventStore(t, eventStore)
+		defer es.Stop()
+
+		require.NoError(t, myStream.Publish(MyEvent{Name: "John"}))
+
+		assert.Eventually(t, func() bool {
+			return received == MyEvent{Name: "John"}
+		}, time.Second, 10*time.Millisecond)
+	})
 }
 
 func makeTestConsumer[E any](received *E) ges.ConsumerFunc[E] {

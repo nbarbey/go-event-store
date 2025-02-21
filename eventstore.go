@@ -96,7 +96,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	if err != nil {
 		return nil, err
 	}
-	_, err = conn.Exec(ctx, `create trigger "new-event-notifier"
+	_, err = conn.Exec(ctx, `create or replace trigger "new-event-notifier"
 								after insert on events
 								for each row execute procedure "doNotify"()`)
 	if err != nil {
