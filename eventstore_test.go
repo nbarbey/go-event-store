@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-func makeTestConsumer(received *[]byte) ges.ConsumerFunc {
-	return func(e []byte) { *received = e }
-}
-
 func TestEventStore(t *testing.T) {
 	postgresContainer, err := runTestContainer()
 	require.NoError(t, err)
@@ -34,10 +30,9 @@ func TestEventStore(t *testing.T) {
 	t.Run("subscribe then publish", func(t *testing.T) {
 		var received []byte
 		es.Subscribe(makeTestConsumer(&received))
-		require.NoError(t, es.Start(context.Background()))
+
+		startTestEventStore(t, es)
 		defer es.Stop()
-		// give time for listener to be set-up properly
-		time.Sleep(10 * time.Millisecond)
 
 		require.NoError(t, es.Publish([]byte(`"my_event_data"`)))
 
@@ -51,10 +46,8 @@ func TestEventStore(t *testing.T) {
 		var receivedOther []byte
 		es.Stream("other-stream").Subscribe(makeTestConsumer(&receivedOther))
 
-		require.NoError(t, es.Start(context.Background()))
+		startTestEventStore(t, es)
 		defer es.Stop()
-		// give time for listener to be set-up properly
-		time.Sleep(10 * time.Millisecond)
 
 		require.NoError(t, es.Stream("some-stream").Publish([]byte(`"my_event_data"`)))
 
@@ -62,4 +55,14 @@ func TestEventStore(t *testing.T) {
 			return `"my_event_data"` == string(received) && len(receivedOther) == 0
 		}, time.Second, 10*time.Millisecond)
 	})
+}
+
+func makeTestConsumer(received *[]byte) ges.ConsumerFunc {
+	return func(e []byte) { *received = e }
+}
+
+func startTestEventStore(t *testing.T, es *ges.EventStore) {
+	require.NoError(t, es.Start(context.Background()))
+	// give time for listener to be set-up properly
+	time.Sleep(10 * time.Millisecond)
 }
