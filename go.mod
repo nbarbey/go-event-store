@@ -25,6 +25,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.7.2 // indirect
+	github.com/jackc/pgxlisten v0.0.0-20241106001234-1d6f6656415c // indirect
 	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect

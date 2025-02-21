@@ -6,19 +6,40 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
-func TestPublish_and_list_all_events(t *testing.T) {
+func TestEventStore(t *testing.T) {
 	postgresContainer, err := runTestContainer()
 	require.NoError(t, err)
 	defer postgresContainer.Cancel()
-	es, err := ges.NewEventStore(context.Background(), postgresContainer.ConnectionString(t))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	es, err := ges.NewEventStore(ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
-	require.NoError(t, es.Publish([]byte(`"my_event_data"`)))
-	events, err := es.All()
-	require.NoError(t, err)
+	t.Run("publish and get all", func(t *testing.T) {
+		require.NoError(t, es.Publish([]byte(`"my_event_data"`)))
+		events, err := es.All()
+		require.NoError(t, err)
 
-	assert.Len(t, events, 1)
-	assert.Equal(t, []byte(`"my_event_data"`), events[0])
+		assert.Len(t, events, 1)
+		assert.Equal(t, []byte(`"my_event_data"`), events[0])
+	})
+	t.Run("subscribe then publish", func(t *testing.T) {
+		received := false
+		es.Subscribe(ges.ConsumerFunc(func(e []byte) {
+			assert.Equal(t, `"my_event_data"`, string(e))
+			received = true
+		}))
+		require.NoError(t, es.Start(context.Background()))
+		defer es.Stop()
+
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
+
+		require.NoError(t, es.Publish([]byte(`"my_event_data"`)))
+
+		assert.Eventually(t, func() bool { return received }, time.Second, 10*time.Millisecond)
+	})
 }
