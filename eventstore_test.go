@@ -57,18 +57,25 @@ func TestEventStore(t *testing.T) {
 			return "my_event_data" == string(received) && len(receivedOther) == 0
 		}, time.Second, 10*time.Millisecond)
 	})
+}
+
+func TestEventStore_custome_events(t *testing.T) {
+	postgresContainer, err := runTestContainer()
+	require.NoError(t, err)
+	defer postgresContainer.Cancel()
+	type MyEvent struct {
+		Name string
+	}
+	es, err := ges.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
+	require.NoError(t, err)
+
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
-		type MyEvent struct {
-			Name string
-		}
-		eventStore, err := ges.NewEventStore[MyEvent](ctx, postgresContainer.ConnectionString(t))
-		require.NoError(t, err)
 
 		var received MyEvent
-		myStream := eventStore.Stream("my-event-stream")
+		myStream := es.Stream("my-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, eventStore)
+		startTestEventStore(t, es)
 		defer es.Stop()
 
 		require.NoError(t, myStream.Publish(MyEvent{Name: "John"}))

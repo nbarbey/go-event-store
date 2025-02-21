@@ -2,7 +2,6 @@ package go_event_store
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -16,10 +15,11 @@ type EventStore[E any] struct {
 	connection *pgx.Conn
 	listener   *pgxlisten.Listener
 	cancelFunc context.CancelFunc
+	codec      Codec[E]
 }
 
 func (e EventStore[E]) Publish(event E) error {
-	data, err := json.Marshal(event)
+	data, err := e.codec.Marshall(event)
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,7 @@ func (e EventStore[E]) All() ([]E, error) {
 		if rowErr != nil {
 			return nil, rowErr
 		}
-		var event E
-		err = json.Unmarshal(payload, &event)
+		event, err := e.codec.Unmarshall(payload)
 		if err != nil {
 			return nil, err
 		}
@@ -51,8 +50,8 @@ func (e EventStore[E]) All() ([]E, error) {
 
 func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
 	e.listener.Handle(defaultStream, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		var event E
-		err := json.Unmarshal([]byte(notification.Payload), &event)
+		payload := notification.Payload
+		event, err := e.codec.Unmarshall([]byte(payload))
 		if err != nil {
 			return err
 		}
@@ -107,6 +106,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		listener: &pgxlisten.Listener{
 			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
 		},
+		codec: &JSONCodec[E]{},
 	}, nil
 }
 
