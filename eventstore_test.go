@@ -5,7 +5,6 @@ import (
 	ges "github.com/nbarbey/go-event-store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log"
 	"testing"
 	"time"
 )
@@ -60,8 +59,6 @@ func TestEventStore(t *testing.T) {
 		require.NoError(t, es.Stream("some-stream").Publish([]byte(`"my_event_data"`)))
 
 		assert.Eventually(t, func() bool {
-			log.Printf(string(received))
-			log.Printf(string(receivedOther))
 			return `"my_event_data"` == string(received) && len(receivedOther) == 0
 		}, time.Second, 10*time.Millisecond)
 	})
