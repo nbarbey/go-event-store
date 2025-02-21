@@ -94,3 +94,7 @@ func NewEventStore(ctx context.Context, connStr string) (*EventStore, error) {
 		},
 	}, nil
 }
+
+func (e EventStore) Stream(name string) *Stream {
+	return &Stream{name: name, eventStore: &e}
+}
