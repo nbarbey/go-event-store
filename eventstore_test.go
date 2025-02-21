@@ -16,7 +16,7 @@ func TestEventStore(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	es, err := ges.NewEventStore(ctx, postgresContainer.ConnectionString(t))
+	es, err := ges.NewEventStore[[]byte](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and get all", func(t *testing.T) {
@@ -57,11 +57,11 @@ func TestEventStore(t *testing.T) {
 	})
 }
 
-func makeTestConsumer(received *[]byte) ges.ConsumerFunc {
+func makeTestConsumer(received *[]byte) ges.ConsumerFunc[[]byte] {
 	return func(e []byte) { *received = e }
 }
 
-func startTestEventStore(t *testing.T, es *ges.EventStore) {
+func startTestEventStore(t *testing.T, es *ges.EventStore[[]byte]) {
 	require.NoError(t, es.Start(context.Background()))
 	// give time for listener to be set-up properly
 	time.Sleep(10 * time.Millisecond)

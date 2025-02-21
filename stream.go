@@ -7,17 +7,17 @@ import (
 	"github.com/jackc/pgxlisten"
 )
 
-type Stream struct {
+type Stream[E any] struct {
 	name       string
-	eventStore *EventStore
+	eventStore *EventStore[E]
 }
 
-func (s Stream) Publish(bytes []byte) error {
+func (s Stream[E]) Publish(bytes []byte) error {
 	_, err := s.eventStore.connection.Exec(context.Background(), "insert into events values ($1, $2)", s.name, bytes)
 	return err
 }
 
-func (s Stream) Subscribe(consumer ConsumerFunc) {
+func (s Stream[E]) Subscribe(consumer ConsumerFunc[E]) {
 	s.eventStore.listener.Handle(s.name, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		consumer.Consume([]byte(notification.Payload))
 		return nil
