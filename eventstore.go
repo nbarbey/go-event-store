@@ -74,7 +74,7 @@ func NewEventStore(ctx context.Context, connStr string) (*EventStore, error) {
   		returns trigger as $$
 			declare 
 			begin
-  			perform pg_notify('events-channel', new.payload::TEXT);
+  			perform pg_notify(new.stream_id, new.payload::TEXT);
   		return new;
 		end;
 		$$ language plpgsql;`)
