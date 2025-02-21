@@ -12,12 +12,12 @@ type Stream[E any] struct {
 	eventStore *EventStore[E]
 }
 
-func (s Stream[E]) Publish(event E) error {
+func (s Stream[E]) Publish(ctx context.Context, event E) error {
 	data, err := s.eventStore.codec.Marshall(event)
 	if err != nil {
 		return err
 	}
-	_, err = s.eventStore.connection.Exec(context.Background(), "insert into events values ($1, $2)", s.name, data)
+	_, err = s.eventStore.connection.Exec(ctx, "insert into events values ($1, $2)", s.name, data)
 	return err
 }
 

@@ -18,17 +18,17 @@ type EventStore[E any] struct {
 	codec      Codec[E]
 }
 
-func (e EventStore[E]) Publish(event E) error {
+func (e EventStore[E]) Publish(ctx context.Context, event E) error {
 	data, err := e.codec.Marshall(event)
 	if err != nil {
 		return err
 	}
-	_, err = e.connection.Exec(context.Background(), "insert into events values ($1, $2)", defaultStream, data)
+	_, err = e.connection.Exec(ctx, "insert into events values ($1, $2)", defaultStream, data)
 	return err
 }
 
-func (e EventStore[E]) All() ([]E, error) {
-	rows, err := e.connection.Query(context.Background(), "select payload from events")
+func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
+	rows, err := e.connection.Query(ctx, "select payload from events")
 	if err != nil {
 		return nil, err
 	}

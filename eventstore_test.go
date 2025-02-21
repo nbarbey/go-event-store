@@ -21,8 +21,8 @@ func TestEventStore(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("publish and get all", func(t *testing.T) {
-		require.NoError(t, es.Publish("my_event_data"))
-		events, err := es.All()
+		require.NoError(t, es.Publish(context.Background(), "my_event_data"))
+		events, err := es.All(context.Background())
 		require.NoError(t, err)
 
 		assert.Len(t, events, 1)
@@ -35,7 +35,7 @@ func TestEventStore(t *testing.T) {
 		startTestEventStore(t, es)
 		defer es.Stop()
 
-		require.NoError(t, es.Publish("my_event_data"))
+		require.NoError(t, es.Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
 			log.Printf(string(received))
@@ -51,7 +51,7 @@ func TestEventStore(t *testing.T) {
 		startTestEventStore(t, es)
 		defer es.Stop()
 
-		require.NoError(t, es.Stream("some-stream").Publish("my_event_data"))
+		require.NoError(t, es.Stream("some-stream").Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
 			return "my_event_data" == string(received) && len(receivedOther) == 0
@@ -78,7 +78,7 @@ func TestEventStore_custome_events(t *testing.T) {
 		startTestEventStore(t, es)
 		defer es.Stop()
 
-		require.NoError(t, myStream.Publish(MyEvent{Name: "John"}))
+		require.NoError(t, myStream.Publish(context.Background(), MyEvent{Name: "John"}))
 
 		assert.Eventually(t, func() bool {
 			return received == MyEvent{Name: "John"}
