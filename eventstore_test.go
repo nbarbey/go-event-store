@@ -27,10 +27,9 @@ func TestEventStore(t *testing.T) {
 		assert.Equal(t, []byte(`"my_event_data"`), events[0])
 	})
 	t.Run("subscribe then publish", func(t *testing.T) {
-		received := false
+		var received []byte
 		es.Subscribe(ges.ConsumerFunc(func(e []byte) {
-			assert.Equal(t, `"my_event_data"`, string(e))
-			received = true
+			received = e
 		}))
 		require.NoError(t, es.Start(context.Background()))
 		defer es.Stop()
@@ -40,6 +39,8 @@ func TestEventStore(t *testing.T) {
 
 		require.NoError(t, es.Publish([]byte(`"my_event_data"`)))
 
-		assert.Eventually(t, func() bool { return received }, time.Second, 10*time.Millisecond)
+		assert.Eventually(t, func() bool {
+			return assert.Equal(t, `"my_event_data"`, string(received))
+		}, time.Second, 10*time.Millisecond)
 	})
 }
