@@ -59,7 +59,7 @@ func TestEventStore(t *testing.T) {
 	})
 }
 
-func TestEventStore_custome_events(t *testing.T) {
+func TestEventStore_custom_events(t *testing.T) {
 	postgresContainer, err := runTestContainer()
 	require.NoError(t, err)
 	defer postgresContainer.Cancel()
