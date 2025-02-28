@@ -38,3 +38,17 @@ func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 		return nil
 	}))
 }
+
+func (s Stream[E]) All(ctx context.Context) ([]E, error) {
+	rows, err := s.connection.Query(ctx, "select payload from events where stream_id=$1", s.name)
+	if err != nil {
+		return nil, err
+	}
+
+	payloads, err := scanAll(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return UnmarshallAll[E](s.codec, payloads)
+}

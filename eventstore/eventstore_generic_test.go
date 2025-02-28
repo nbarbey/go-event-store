@@ -28,6 +28,18 @@ func TestEventStore(t *testing.T) {
 		assert.Len(t, events, 1)
 		assert.Equal(t, "my_event_data", events[0])
 	})
+	t.Run("publish and get all of one stream", func(t *testing.T) {
+		stream := es.Stream("some-stream")
+
+		require.NoError(t, es.Publish(context.Background(), "default stream data"))
+		require.NoError(t, stream.Publish(context.Background(), "some other stream data"))
+
+		events, err := stream.All(context.Background())
+		require.NoError(t, err)
+
+		assert.Len(t, events, 1)
+		assert.Equal(t, "some other stream data", events[0])
+	})
 	t.Run("subscribe then publish", func(t *testing.T) {
 		var received string
 		es.Subscribe(makeTestConsumer[string](&received))
