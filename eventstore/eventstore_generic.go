@@ -21,31 +21,30 @@ func (e EventStore[E]) Publish(ctx context.Context, event E) error {
 	return e.defaultStream.Publish(ctx, event)
 }
 
+type eventRow struct {
+	Payload []byte
+}
+
+type eventRows []eventRow
+
+func (ers eventRows) Payloads() [][]byte {
+	payloads := make([][]byte, 0)
+	for _, e := range ers {
+		payloads = append(payloads, e.Payload)
+	}
+	return payloads
+}
+
 func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
 	rows, err := e.connection.Query(ctx, "select payload from events")
 	if err != nil {
 		return nil, err
 	}
-
-	payloads, err := scanAll(rows)
+	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
-
-	return UnmarshallAll[E](e.codec, payloads)
-}
-
-func scanAll(rows pgx.Rows) ([][]byte, error) {
-	payloads := make([][]byte, 0)
-	for rows.Next() {
-		var payload []byte
-		rowErr := rows.Scan(&payload)
-		if rowErr != nil {
-			return nil, rowErr
-		}
-		payloads = append(payloads, payload)
-	}
-	return payloads, nil
+	return UnmarshallAll[E](e.codec, eventRows(ers).Payloads())
 }
 
 func (e EventStore[E]) Subscribe(consumer Consumer[E]) {

@@ -2,6 +2,7 @@ package eventstore
 
 import (
 	"context"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgxlisten"
@@ -44,11 +45,9 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	payloads, err := scanAll(rows)
+	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
-
-	return UnmarshallAll[E](s.codec, payloads)
+	return UnmarshallAll[E](s.codec, eventRows(ers).Payloads())
 }
