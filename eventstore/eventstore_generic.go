@@ -4,52 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgxlisten"
 )
 
 var defaultStream = "default-stream"
 
-type GenericEventStore[E any] struct {
-	*BaseStore
+type EventStore[E any] struct {
+	connection    *pgx.Conn
+	listener      *pgxlisten.Listener
+	cancelFunc    context.CancelFunc
 	codec         Codec[E]
 	defaultStream *Stream[E]
 }
 
-func NewGenericEventStore[E any](ctx context.Context, connStr string) (*GenericEventStore[E], error) {
-	store, err := NewBaseStore(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-	eventStore := GenericEventStore[E]{
-		BaseStore: store,
-
-		codec: &JSONCodec[E]{},
-	}
-	eventStore.defaultStream = eventStore.Stream(defaultStream)
-	return &eventStore, nil
-}
-
-func (e GenericEventStore[E]) Publish(ctx context.Context, event E) error {
+func (e EventStore[E]) Publish(ctx context.Context, event E) error {
 	return e.defaultStream.Publish(ctx, event)
-}
-
-func (e GenericEventStore[E]) Subscribe(consumer Consumer[E]) {
-	e.defaultStream.Subscribe(consumer)
-}
-
-func (e GenericEventStore[E]) All(ctx context.Context) ([]E, error) {
-	rows, err := e.connection.Query(ctx, "select payload from events")
-	if err != nil {
-		return nil, err
-	}
-	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
-	if err != nil {
-		return nil, fmt.Errorf("CollectRows error: %w", err)
-	}
-	return UnmarshallAll[E](e.codec, eventRows(ers).Payloads())
-}
-
-func (e GenericEventStore[E]) Stream(name string) *Stream[E] {
-	return NewStream[E](name, e.connection, e.codec, e.listener)
 }
 
 type eventRow struct {
@@ -64,4 +33,77 @@ func (ers eventRows) Payloads() [][]byte {
 		payloads = append(payloads, e.Payload)
 	}
 	return payloads
+}
+
+func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
+	rows, err := e.connection.Query(ctx, "select payload from events")
+	if err != nil {
+		return nil, err
+	}
+	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
+	if err != nil {
+		return nil, fmt.Errorf("CollectRows error: %w", err)
+	}
+	return UnmarshallAll[E](e.codec, eventRows(ers).Payloads())
+}
+
+func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
+	e.defaultStream.Subscribe(consumer)
+}
+
+func (e EventStore[E]) Start(ctx context.Context) error {
+	cancellableContext, cancel := context.WithCancel(ctx)
+	e.cancelFunc = cancel
+	go func() { _ = e.listener.Listen(cancellableContext) }()
+	return nil
+}
+
+func (e EventStore[E]) Stop() {
+	if e.cancelFunc != nil {
+		e.cancelFunc()
+	}
+}
+
+func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
+	conn, err := pgx.Connect(ctx, connStr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
+	}
+
+	eventStore := EventStore[E]{
+		connection: conn,
+		listener: &pgxlisten.Listener{
+			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
+		},
+		codec: &JSONCodec[E]{},
+	}
+	eventStore.defaultStream = eventStore.Stream(defaultStream)
+	err = eventStore.createTableAndTrigger(ctx)
+	return &eventStore, err
+}
+
+func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
+	_, err := e.connection.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
+	if err != nil {
+		return err
+	}
+	_, err = e.connection.Exec(ctx, `create or replace function "doNotify"()
+  		returns trigger as $$
+			declare 
+			begin
+  			perform pg_notify(new.stream_id, new.payload::TEXT);
+  		return new;
+		end;
+		$$ language plpgsql;`)
+	if err != nil {
+		return err
+	}
+	_, err = e.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
+								after insert on events
+								for each row execute procedure "doNotify"()`)
+	return err
+}
+
+func (e EventStore[E]) Stream(name string) *Stream[E] {
+	return NewStream[E](name, e.connection, e.codec, e.listener)
 }

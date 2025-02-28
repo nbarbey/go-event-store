@@ -7,7 +7,7 @@ import (
 
 type Server[E any] struct {
 	address    string
-	eventStore *GenericEventStore[E]
+	eventStore *EventStore[E]
 	*http.ServeMux
 }
 
@@ -17,7 +17,7 @@ func (e Server[E]) Start() error {
 
 func (e Server[E]) Stop() {}
 
-func NewServerFromEventStore[E any](hostname string, es *GenericEventStore[E]) *Server[E] {
+func NewServerFromEventStore[E any](hostname string, es *EventStore[E]) *Server[E] {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/publish", func(writer http.ResponseWriter, request *http.Request) {
 		var event E
