@@ -22,7 +22,7 @@ func TestServerPublish(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	es, err := eventstore.NewEventStore[TypicalEvent](ctx, postgresContainer.ConnectionString(t))
+	es, err := eventstore.NewGenericEventStore[TypicalEvent](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 	server := eventstore.NewServerFromEventStore[TypicalEvent]("http://localhost:8080", es)
 

@@ -17,7 +17,7 @@ func TestEventStore(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	es, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
+	es, err := eventstore.NewGenericEventStore[string](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and get all", func(t *testing.T) {
@@ -78,7 +78,7 @@ func TestEventStore_custom_events(t *testing.T) {
 	type MyEvent struct {
 		Name string
 	}
-	es, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
+	es, err := eventstore.NewGenericEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
@@ -102,7 +102,7 @@ func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
 	return func(e E) { *received = e }
 }
 
-func startTestEventStore[E any](t *testing.T, es *eventstore.EventStore[E]) {
+func startTestEventStore[E any](t *testing.T, es *eventstore.GenericEventStore[E]) {
 	require.NoError(t, es.Start(context.Background()))
 	// give time for listener to be set-up properly
 	time.Sleep(10 * time.Millisecond)
