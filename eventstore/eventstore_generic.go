@@ -31,20 +31,26 @@ func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
 	if err != nil {
 		return nil, err
 	}
-	output := make([]E, 0)
+
+	payloads, err := scanAll(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	return UnmarshallAll[E](e.codec, payloads)
+}
+
+func scanAll(rows pgx.Rows) ([][]byte, error) {
+	payloads := make([][]byte, 0)
 	for rows.Next() {
 		var payload []byte
 		rowErr := rows.Scan(&payload)
 		if rowErr != nil {
 			return nil, rowErr
 		}
-		event, err := e.codec.Unmarshall(payload)
-		if err != nil {
-			return nil, err
-		}
-		output = append(output, event)
+		payloads = append(payloads, payload)
 	}
-	return output, nil
+	return payloads, nil
 }
 
 func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
