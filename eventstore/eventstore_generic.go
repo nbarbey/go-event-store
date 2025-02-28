@@ -118,5 +118,5 @@ func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
 }
 
 func (e EventStore[E]) Stream(name string) *Stream[E] {
-	return &Stream[E]{name: name, eventStore: &e}
+	return NewStream[E](name, e.connection, e.codec, e.listener)
 }
