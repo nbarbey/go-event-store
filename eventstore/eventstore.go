@@ -80,24 +80,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		return nil, err
 	}
 
-	_, err = conn.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
-	if err != nil {
-		return nil, err
-	}
-	_, err = conn.Exec(ctx, `create or replace function "doNotify"()
-  		returns trigger as $$
-			declare 
-			begin
-  			perform pg_notify(new.stream_id, new.payload::TEXT);
-  		return new;
-		end;
-		$$ language plpgsql;`)
-	if err != nil {
-		return nil, err
-	}
-	_, err = conn.Exec(ctx, `create or replace trigger "new-event-notifier"
-								after insert on events
-								for each row execute procedure "doNotify"()`)
+	err = createTableAndTrigger(ctx, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +91,28 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		},
 		codec: &JSONCodec[E]{},
 	}, nil
+}
+
+func createTableAndTrigger(ctx context.Context, conn *pgx.Conn) error {
+	_, err := conn.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, `create or replace function "doNotify"()
+  		returns trigger as $$
+			declare 
+			begin
+  			perform pg_notify(new.stream_id, new.payload::TEXT);
+  		return new;
+		end;
+		$$ language plpgsql;`)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Exec(ctx, `create or replace trigger "new-event-notifier"
+								after insert on events
+								for each row execute procedure "doNotify"()`)
+	return err
 }
 
 func (e EventStore[E]) Stream(name string) *Stream[E] {
