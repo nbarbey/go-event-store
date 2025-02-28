@@ -6,7 +6,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgxlisten"
-	"os"
 )
 
 var defaultStream = "default-stream"
@@ -76,29 +75,26 @@ func (e EventStore[E]) Stop() {
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		return nil, err
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	err = createTableAndTrigger(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
-	return &EventStore[E]{
+	eventStore := EventStore[E]{
 		connection: conn,
 		listener: &pgxlisten.Listener{
 			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
 		},
 		codec: &JSONCodec[E]{},
-	}, nil
+	}
+	err = eventStore.createTableAndTrigger(ctx)
+	return &eventStore, err
 }
 
-func createTableAndTrigger(ctx context.Context, conn *pgx.Conn) error {
-	_, err := conn.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
+func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
+	_, err := e.connection.Exec(ctx, "create table if not exists events (stream_id text, payload jsonb)")
 	if err != nil {
 		return err
 	}
-	_, err = conn.Exec(ctx, `create or replace function "doNotify"()
+	_, err = e.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
 			declare 
 			begin
@@ -109,7 +105,7 @@ func createTableAndTrigger(ctx context.Context, conn *pgx.Conn) error {
 	if err != nil {
 		return err
 	}
-	_, err = conn.Exec(ctx, `create or replace trigger "new-event-notifier"
+	_, err = e.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
 								after insert on events
 								for each row execute procedure "doNotify"()`)
 	return err
