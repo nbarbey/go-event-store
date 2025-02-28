@@ -27,7 +27,7 @@ func (s Stream[E]) Publish(ctx context.Context, event E) error {
 	return err
 }
 
-func (s Stream[E]) Subscribe(consumer ConsumerFunc[E]) {
+func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 	s.listener.Handle(s.name, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		event, err := s.codec.Unmarshall([]byte(notification.Payload))
 		if err != nil {

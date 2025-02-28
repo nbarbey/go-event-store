@@ -4,26 +4,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgxlisten"
 )
 
 var defaultStream = "default-stream"
 
 type EventStore[E any] struct {
-	connection *pgx.Conn
-	listener   *pgxlisten.Listener
-	cancelFunc context.CancelFunc
-	codec      Codec[E]
+	connection    *pgx.Conn
+	listener      *pgxlisten.Listener
+	cancelFunc    context.CancelFunc
+	codec         Codec[E]
+	defaultStream *Stream[E]
 }
 
 func (e EventStore[E]) Publish(ctx context.Context, event E) error {
-	data, err := e.codec.Marshall(event)
-	if err != nil {
-		return err
-	}
-	_, err = e.connection.Exec(ctx, "insert into events values ($1, $2)", defaultStream, data)
-	return err
+	return e.defaultStream.Publish(ctx, event)
 }
 
 func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
@@ -54,15 +49,7 @@ func scanAll(rows pgx.Rows) ([][]byte, error) {
 }
 
 func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
-	e.listener.Handle(defaultStream, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		payload := notification.Payload
-		event, err := e.codec.Unmarshall([]byte(payload))
-		if err != nil {
-			return err
-		}
-		consumer.Consume(event)
-		return nil
-	}))
+	e.defaultStream.Subscribe(consumer)
 }
 
 func (e EventStore[E]) Start(ctx context.Context) error {
@@ -91,6 +78,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		},
 		codec: &JSONCodec[E]{},
 	}
+	eventStore.defaultStream = eventStore.Stream(defaultStream)
 	err = eventStore.createTableAndTrigger(ctx)
 	return &eventStore, err
 }
