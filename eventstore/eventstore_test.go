@@ -166,11 +166,16 @@ func TestEventStore(t *testing.T) {
 		deleted := todoDeleted{TodoID: 1}
 		require.NoError(t, s.WithType("todoDeleted").Publish(context.Background(), deleted))
 
-		assert.Eventually(t, func() bool { return created == createdReceived }, time.Second, 10*time.Millisecond)
-		assert.Eventually(t, func() bool { return done == doneReceived }, time.Second, 10*time.Millisecond)
-		assert.Eventually(t, func() bool { return deleted == deletedReceived }, time.Second, 10*time.Millisecond)
+		eventuallyEqual(t, created, createdReceived)
+		eventuallyEqual(t, done, doneReceived)
+		eventuallyEqual(t, deleted, deletedReceived)
 	})
 
+}
+
+func eventuallyEqual(t *testing.T, expected any, received any) {
+	t.Helper()
+	assert.Eventually(t, func() bool { return assert.Equal(t, expected, received) }, time.Second, time.Millisecond)
 }
 
 func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
