@@ -63,3 +63,12 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	}
 	return UnmarshallAll[E](s.codec, eventRows(ers).payloads())
 }
+
+func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {
+	return &TypedPublisher[E]{
+		typeHint:   typeHint,
+		streamId:   s.name,
+		connection: s.connection,
+		codec:      s.codec,
+	}
+}

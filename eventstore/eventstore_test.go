@@ -89,6 +89,22 @@ func TestEventStore(t *testing.T) {
 			return received == MyEvent{Name: "John"}
 		}, time.Second, 10*time.Millisecond)
 	})
+
+	t.Run("publish with type", func(t *testing.T) {
+		var received MyEvent
+		myStream := customEventStore.Stream("my-custom-event-stream")
+		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
+
+		startTestEventStore(t, customEventStore)
+		defer customEventStore.Stop()
+
+		require.NoError(t, myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"}))
+
+		assert.Eventually(t, func() bool {
+			return received == MyEvent{Name: "John"}
+		}, time.Second, 10*time.Millisecond)
+	})
+
 }
 
 func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
