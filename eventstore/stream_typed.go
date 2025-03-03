@@ -13,6 +13,10 @@ type TypedPublisher[E any] struct {
 	codec      Codec[E]
 }
 
+func NewTypedPublisher[E any](typeHint string, streamId string, connection *pgxpool.Pool, codec Codec[E]) *TypedPublisher[E] {
+	return &TypedPublisher[E]{typeHint: typeHint, streamId: streamId, connection: connection, codec: codec}
+}
+
 func (s TypedPublisher[E]) Publish(ctx context.Context, event E) error {
 	data, err := s.codec.Marshall(event)
 	if err != nil {

@@ -3,7 +3,6 @@ package eventstore
 import (
 	"context"
 	"fmt"
-	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,23 +10,25 @@ import (
 )
 
 type Stream[E any] struct {
-	name       string
-	connection *pgxpool.Pool
-	codec      Codec[E]
-	listener   *pgxlisten.Listener
+	name             string
+	connection       *pgxpool.Pool
+	codec            Codec[E]
+	listener         *pgxlisten.Listener
+	defaultPublisher *TypedPublisher[E]
 }
 
 func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], listener *pgxlisten.Listener) *Stream[E] {
-	return &Stream[E]{name: name, connection: connection, codec: codec, listener: listener}
+	return &Stream[E]{
+		name:             name,
+		connection:       connection,
+		codec:            codec,
+		listener:         listener,
+		defaultPublisher: NewTypedPublisher[E]("", name, connection, codec),
+	}
 }
 
 func (s Stream[E]) Publish(ctx context.Context, event E) error {
-	data, err := s.codec.Marshall(event)
-	if err != nil {
-		return err
-	}
-	_, err = s.connection.Exec(ctx, "insert into events (event_id, stream_id, event_type, payload) values ($1, $2, $3, $4)", guid.New(), s.name, "", data)
-	return err
+	return s.defaultPublisher.Publish(ctx, event)
 }
 
 func (s Stream[E]) Subscribe(consumer Consumer[E]) {
@@ -65,10 +66,5 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 }
 
 func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {
-	return &TypedPublisher[E]{
-		typeHint:   typeHint,
-		streamId:   s.name,
-		connection: s.connection,
-		codec:      s.codec,
-	}
+	return NewTypedPublisher[E](typeHint, s.name, s.connection, s.codec)
 }
