@@ -36,15 +36,7 @@ func (ers eventRows) Payloads() [][]byte {
 }
 
 func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
-	rows, err := e.connection.Query(ctx, "select payload from events")
-	if err != nil {
-		return nil, err
-	}
-	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
-	if err != nil {
-		return nil, fmt.Errorf("CollectRows error: %w", err)
-	}
-	return UnmarshallAll[E](e.codec, eventRows(ers).Payloads())
+	return e.defaultStream.All(ctx)
 }
 
 func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
