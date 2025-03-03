@@ -7,6 +7,10 @@ type Unmarshaller[E any] interface {
 	Unmarshall(payload []byte) (event E, err error)
 }
 
+type TypeRegister[E any] interface {
+	RegisterType(s string, u Unmarshaller[E])
+}
+
 type TypedUnmarshaller[E any] interface {
 	UnmarshallWithType(typeHint string, payload []byte) (event E, err error)
 }
@@ -14,6 +18,8 @@ type TypedUnmarshaller[E any] interface {
 type Codec[E any] interface {
 	Marshaller[E]
 	Unmarshaller[E]
+	TypeRegister[E]
+	TypedUnmarshaller[E]
 }
 
 func UnmarshallAll[E any](u Unmarshaller[E], payloads [][]byte) (events []E, err error) {
