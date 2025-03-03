@@ -7,8 +7,6 @@ import (
 	"github.com/jackc/pgxlisten"
 )
 
-var defaultStream = "default-stream"
-
 type EventStore[E any] struct {
 	connection    *pgx.Conn
 	listener      *pgxlisten.Listener
@@ -30,7 +28,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		},
 		codec: &JSONCodec[E]{},
 	}
-	eventStore.defaultStream = eventStore.Stream(defaultStream)
+	eventStore.defaultStream = eventStore.Stream("default-stream")
 	err = eventStore.createTableAndTrigger(ctx)
 	return &eventStore, err
 }
