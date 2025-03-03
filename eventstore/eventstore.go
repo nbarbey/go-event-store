@@ -17,31 +17,6 @@ type EventStore[E any] struct {
 	defaultStream *Stream[E]
 }
 
-func (e EventStore[E]) Publish(ctx context.Context, event E) error {
-	return e.defaultStream.Publish(ctx, event)
-}
-
-func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
-	return e.defaultStream.All(ctx)
-}
-
-func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
-	e.defaultStream.Subscribe(consumer)
-}
-
-func (e EventStore[E]) Start(ctx context.Context) error {
-	cancellableContext, cancel := context.WithCancel(ctx)
-	e.cancelFunc = cancel
-	go func() { _ = e.listener.Listen(cancellableContext) }()
-	return nil
-}
-
-func (e EventStore[E]) Stop() {
-	if e.cancelFunc != nil {
-		e.cancelFunc()
-	}
-}
-
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
 	conn, err := pgx.Connect(ctx, connStr)
 	if err != nil {
@@ -58,6 +33,31 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	eventStore.defaultStream = eventStore.Stream(defaultStream)
 	err = eventStore.createTableAndTrigger(ctx)
 	return &eventStore, err
+}
+
+func (e EventStore[E]) Publish(ctx context.Context, event E) error {
+	return e.defaultStream.Publish(ctx, event)
+}
+
+func (e EventStore[E]) Subscribe(consumer Consumer[E]) {
+	e.defaultStream.Subscribe(consumer)
+}
+
+func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
+	return e.defaultStream.All(ctx)
+}
+
+func (e EventStore[E]) Start(ctx context.Context) error {
+	cancellableContext, cancel := context.WithCancel(ctx)
+	e.cancelFunc = cancel
+	go func() { _ = e.listener.Listen(cancellableContext) }()
+	return nil
+}
+
+func (e EventStore[E]) Stop() {
+	if e.cancelFunc != nil {
+		e.cancelFunc()
+	}
 }
 
 func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
