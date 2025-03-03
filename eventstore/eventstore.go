@@ -92,7 +92,7 @@ type eventRow struct {
 
 type eventRows []eventRow
 
-func (ers eventRows) Payloads() [][]byte {
+func (ers eventRows) payloads() [][]byte {
 	payloads := make([][]byte, 0)
 	for _, e := range ers {
 		payloads = append(payloads, e.Payload)

@@ -49,5 +49,5 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	if err != nil {
 		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
-	return UnmarshallAll[E](s.codec, eventRows(ers).Payloads())
+	return UnmarshallAll[E](s.codec, eventRows(ers).payloads())
 }
