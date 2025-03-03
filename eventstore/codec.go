@@ -22,18 +22,6 @@ type Codec[E any] interface {
 	TypedUnmarshaller[E]
 }
 
-func UnmarshallAll[E any](u Unmarshaller[E], payloads [][]byte) (events []E, err error) {
-	output := make([]E, 0)
-	for _, payload := range payloads {
-		event, err := u.Unmarshall(payload)
-		if err != nil {
-			return nil, err
-		}
-		output = append(output, event)
-	}
-	return output, nil
-}
-
 func UnmarshallAllWithType[E any](u TypedUnmarshaller[E], types []string, payloads [][]byte) (events []E, err error) {
 	output := make([]E, 0)
 	for i, payload := range payloads {
