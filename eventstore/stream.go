@@ -3,6 +3,7 @@ package eventstore
 import (
 	"context"
 	"fmt"
+	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgxlisten"
@@ -24,7 +25,7 @@ func (s Stream[E]) Publish(ctx context.Context, event E) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.connection.Exec(ctx, "insert into events values ($1, $2)", s.name, data)
+	_, err = s.connection.Exec(ctx, "insert into events (event_id, stream_id, payload) values ($1, $2, $3)", guid.New(), s.name, data)
 	return err
 }
 
