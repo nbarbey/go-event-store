@@ -67,7 +67,7 @@ func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
   		returns trigger as $$
 			declare 
 			begin
-  			perform pg_notify(new.stream_id, new.payload::TEXT);
+  			perform pg_notify(new.stream_id, new.event_id);
   		return new;
 		end;
 		$$ language plpgsql;`)
