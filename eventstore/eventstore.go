@@ -21,20 +21,6 @@ func (e EventStore[E]) Publish(ctx context.Context, event E) error {
 	return e.defaultStream.Publish(ctx, event)
 }
 
-type eventRow struct {
-	Payload []byte
-}
-
-type eventRows []eventRow
-
-func (ers eventRows) Payloads() [][]byte {
-	payloads := make([][]byte, 0)
-	for _, e := range ers {
-		payloads = append(payloads, e.Payload)
-	}
-	return payloads
-}
-
 func (e EventStore[E]) All(ctx context.Context) ([]E, error) {
 	return e.defaultStream.All(ctx)
 }
@@ -98,4 +84,18 @@ func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
 
 func (e EventStore[E]) Stream(name string) *Stream[E] {
 	return NewStream[E](name, e.connection, e.codec, e.listener)
+}
+
+type eventRow struct {
+	Payload []byte
+}
+
+type eventRows []eventRow
+
+func (ers eventRows) Payloads() [][]byte {
+	payloads := make([][]byte, 0)
+	for _, e := range ers {
+		payloads = append(payloads, e.Payload)
+	}
+	return payloads
 }
