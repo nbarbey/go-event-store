@@ -120,9 +120,8 @@ func TestEventStore(t *testing.T) {
 
 		require.NoError(t, myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"}))
 
-		assert.Eventually(t, func() bool {
-			return received == MyEvent{Name: "John"}
-		}, time.Second, 10*time.Millisecond)
+		expected := MyEvent{Name: "John"}
+		assert.Eventually(t, func() bool { return assert.Equal(t, expected, received) }, time.Second, time.Millisecond)
 	})
 
 	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t))
@@ -166,20 +165,18 @@ func TestEventStore(t *testing.T) {
 		deleted := todoDeleted{TodoID: 1}
 		require.NoError(t, s.WithType("todoDeleted").Publish(context.Background(), deleted))
 
-		eventuallyEqual(t, created, createdReceived)
-		eventuallyEqual(t, done, doneReceived)
-		eventuallyEqual(t, deleted, deletedReceived)
+		assert.Eventually(t, func() bool { return assert.Equal(t, created, createdReceived) }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return assert.Equal(t, done, doneReceived) }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return assert.Equal(t, deleted, deletedReceived) }, time.Second, time.Millisecond)
+
 	})
 
 }
 
-func eventuallyEqual(t *testing.T, expected any, received any) {
-	t.Helper()
-	assert.Eventually(t, func() bool { return assert.Equal(t, expected, received) }, time.Second, time.Millisecond)
-}
-
 func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
-	return func(e E) { *received = e }
+	return func(e E) {
+		*received = e
+	}
 }
 
 func startTestEventStore[E any](t *testing.T, es *eventstore.EventStore[E]) {
