@@ -17,21 +17,21 @@ func TestEventStore(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	es, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
+	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and get all", func(t *testing.T) {
-		require.NoError(t, es.Publish(context.Background(), "my_event_data"))
-		events, err := es.All(context.Background())
+		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
+		events, err := stringEventStore.All(context.Background())
 		require.NoError(t, err)
 
 		assert.Len(t, events, 1)
 		assert.Equal(t, "my_event_data", events[0])
 	})
 	t.Run("publish and get all of one stream", func(t *testing.T) {
-		stream := es.Stream("some-stream")
+		stream := stringEventStore.Stream("some-stream")
 
-		require.NoError(t, es.Publish(context.Background(), "default stream data"))
+		require.NoError(t, stringEventStore.Publish(context.Background(), "default stream data"))
 		require.NoError(t, stream.Publish(context.Background(), "some other stream data"))
 
 		events, err := stream.All(context.Background())
@@ -42,12 +42,12 @@ func TestEventStore(t *testing.T) {
 	})
 	t.Run("subscribe then publish", func(t *testing.T) {
 		var received string
-		es.Subscribe(makeTestConsumer[string](&received))
+		stringEventStore.Subscribe(makeTestConsumer[string](&received))
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		startTestEventStore(t, stringEventStore)
+		defer stringEventStore.Stop()
 
-		require.NoError(t, es.Publish(context.Background(), "my_event_data"))
+		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
 			log.Printf(string(received))
@@ -56,39 +56,33 @@ func TestEventStore(t *testing.T) {
 	})
 	t.Run("publish to some stream and not others", func(t *testing.T) {
 		var received string
-		es.Stream("some-stream").Subscribe(makeTestConsumer[string](&received))
+		stringEventStore.Stream("some-stream").Subscribe(makeTestConsumer[string](&received))
 		var receivedOther string
-		es.Stream("other-stream").Subscribe(makeTestConsumer[string](&receivedOther))
+		stringEventStore.Stream("other-stream").Subscribe(makeTestConsumer[string](&receivedOther))
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		startTestEventStore(t, stringEventStore)
+		defer stringEventStore.Stop()
 
-		require.NoError(t, es.Stream("some-stream").Publish(context.Background(), "my_event_data"))
+		require.NoError(t, stringEventStore.Stream("some-stream").Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
 			return "my_event_data" == string(received) && len(receivedOther) == 0
 		}, time.Second, 10*time.Millisecond)
 	})
-}
 
-func TestEventStore_custom_events(t *testing.T) {
-	postgresContainer, err := runTestContainer()
-	require.NoError(t, err)
-	defer postgresContainer.Cancel()
 	type MyEvent struct {
 		Name string
 	}
-	es, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
+	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
-
 		var received MyEvent
-		myStream := es.Stream("my-event-stream")
+		myStream := customEventStore.Stream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		startTestEventStore(t, customEventStore)
+		defer customEventStore.Stop()
 
 		require.NoError(t, myStream.Publish(context.Background(), MyEvent{Name: "John"}))
 
