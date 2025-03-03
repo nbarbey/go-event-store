@@ -84,6 +84,10 @@ func (e EventStore[E]) Stream(name string) *Stream[E] {
 	return NewStream[E](name, e.connection, e.codec, e.listener)
 }
 
+func (e EventStore[E]) WithCodec(codec Codec[E]) {
+	e.codec = codec
+}
+
 type eventRow struct {
 	Payload []byte
 }

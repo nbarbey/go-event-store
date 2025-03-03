@@ -18,6 +18,7 @@ func TestEventStore(t *testing.T) {
 	defer cancel()
 	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
+	stringEventStore.WithCodec(&eventstore.NoopCodec{})
 
 	t.Run("publish and get all", func(t *testing.T) {
 		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
