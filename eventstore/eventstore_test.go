@@ -5,7 +5,6 @@ import (
 	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log"
 	"testing"
 	"time"
 )
@@ -29,7 +28,7 @@ func TestEventStore(t *testing.T) {
 		assert.Equal(t, "my_event_data", events[0])
 	})
 	t.Run("publish and get all of one stream", func(t *testing.T) {
-		stream := stringEventStore.Stream("some-stream")
+		stream := stringEventStore.Stream("awesome-string-stream")
 
 		require.NoError(t, stringEventStore.Publish(context.Background(), "default stream data"))
 		require.NoError(t, stream.Publish(context.Background(), "some other stream data"))
@@ -50,20 +49,19 @@ func TestEventStore(t *testing.T) {
 		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
-			log.Printf(string(received))
 			return "my_event_data" == string(received)
 		}, time.Second, 10*time.Millisecond)
 	})
 	t.Run("publish to some stream and not others", func(t *testing.T) {
 		var received string
-		stringEventStore.Stream("some-stream").Subscribe(makeTestConsumer[string](&received))
+		stringEventStore.Stream("some-string-stream").Subscribe(makeTestConsumer[string](&received))
 		var receivedOther string
-		stringEventStore.Stream("other-stream").Subscribe(makeTestConsumer[string](&receivedOther))
+		stringEventStore.Stream("other-string-stream").Subscribe(makeTestConsumer[string](&receivedOther))
 
 		startTestEventStore(t, stringEventStore)
 		defer stringEventStore.Stop()
 
-		require.NoError(t, stringEventStore.Stream("some-stream").Publish(context.Background(), "my_event_data"))
+		require.NoError(t, stringEventStore.Stream("some-string-stream").Publish(context.Background(), "my_event_data"))
 
 		assert.Eventually(t, func() bool {
 			return "my_event_data" == string(received) && len(receivedOther) == 0

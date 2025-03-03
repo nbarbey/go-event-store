@@ -31,13 +31,7 @@ func (s Stream[E]) Publish(ctx context.Context, event E) error {
 
 func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 	s.listener.Handle(s.name, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		row := s.connection.QueryRow(ctx, "select payload from events where event_id=$1", notification.Payload)
-		var payload []byte
-		err := row.Scan(&payload)
-		if err != nil {
-			return err
-		}
-		event, err := s.codec.Unmarshall([]byte(payload))
+		event, err := s.getEvent(ctx, notification.Payload)
 		if err != nil {
 			return err
 		}
@@ -45,6 +39,16 @@ func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 		consumer.Consume(event)
 		return nil
 	}))
+}
+
+func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
+	row := s.connection.QueryRow(ctx, "select payload from events where event_id=$1", eventId)
+	var payload []byte
+	err = row.Scan(&payload)
+	if err != nil {
+		return event, err
+	}
+	return s.codec.Unmarshall(payload)
 }
 
 func (s Stream[E]) All(ctx context.Context) ([]E, error) {
