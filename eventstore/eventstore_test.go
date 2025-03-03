@@ -105,9 +105,7 @@ func TestEventStore(t *testing.T) {
 
 		require.NoError(t, myStream.Publish(context.Background(), MyEvent{Name: "John"}))
 
-		assert.Eventually(t, func() bool {
-			return received == MyEvent{Name: "John"}
-		}, time.Second, 10*time.Millisecond)
+		assert.Eventually(t, func() bool { return received == MyEvent{Name: "John"} }, time.Second, 10*time.Millisecond)
 	})
 
 	t.Run("publish with type", func(t *testing.T) {
@@ -121,7 +119,7 @@ func TestEventStore(t *testing.T) {
 		require.NoError(t, myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"}))
 
 		expected := MyEvent{Name: "John"}
-		assert.Eventually(t, func() bool { return assert.Equal(t, expected, received) }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return expected == received }, time.Second, time.Millisecond)
 	})
 
 	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t))
@@ -165,9 +163,9 @@ func TestEventStore(t *testing.T) {
 		deleted := todoDeleted{TodoID: 1}
 		require.NoError(t, s.WithType("todoDeleted").Publish(context.Background(), deleted))
 
-		assert.Eventually(t, func() bool { return assert.Equal(t, created, createdReceived) }, time.Second, time.Millisecond)
-		assert.Eventually(t, func() bool { return assert.Equal(t, done, doneReceived) }, time.Second, time.Millisecond)
-		assert.Eventually(t, func() bool { return assert.Equal(t, deleted, deletedReceived) }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return created == createdReceived }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return done == doneReceived }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return deleted == deletedReceived }, time.Second, time.Millisecond)
 
 	})
 
