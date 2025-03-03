@@ -43,13 +43,13 @@ func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 }
 
 func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
-	row := s.connection.QueryRow(ctx, "select payload from events where event_id=$1 and stream_id=$2", eventId, s.name)
+	row := s.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, s.name)
 	var er eventRow
-	err = row.Scan(&er.Payload)
+	err = row.Scan(&er.EventType, &er.Payload)
 	if err != nil {
 		return event, err
 	}
-	return s.codec.Unmarshall(er.Payload)
+	return s.codec.UnmarshallWithType(er.EventType, er.Payload)
 }
 
 func (s Stream[E]) All(ctx context.Context) ([]E, error) {

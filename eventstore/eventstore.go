@@ -27,7 +27,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		listener: &pgxlisten.Listener{
 			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
 		},
-		codec: &JSONCodec[E]{},
+		codec: NewJSONCodec[E](),
 	}
 	eventStore.defaultStream = eventStore.Stream("default-stream")
 	err = eventStore.createTableAndTrigger(ctx)

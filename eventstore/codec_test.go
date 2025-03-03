@@ -32,7 +32,7 @@ var newYear = time.Date(2026, 01, 01, 0, 0, 0, 0, time.UTC)
 var repairedAMercredForNewYear = carRepaired{CarID: "1", Date: newYear}
 
 func TestJSONCodec_Marshall_Unmarshall(t *testing.T) {
-	c := JSONCodec[carSold]{}
+	c := NewJSONCodec[carSold]()
 
 	payload, err := c.Marshall(soldAMercedesForChristmas)
 	require.NoError(t, err)

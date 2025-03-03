@@ -23,10 +23,11 @@ func (JSONCodec[E]) Unmarshall(payload []byte) (event E, err error) {
 
 func (j JSONCodec[E]) UnmarshallWithType(typeHint string, payload []byte) (event E, err error) {
 	u, ok := j.unmarshalers[typeHint]
-	if !ok {
-		err = json.Unmarshal(payload, &event)
+	if ok {
+		return u.Unmarshall(payload)
 	}
-	return u.Unmarshall(payload)
+	err = json.Unmarshal(payload, &event)
+	return
 }
 
 func (j JSONCodec[E]) RegisterType(s string, u Unmarshaller[E]) {
