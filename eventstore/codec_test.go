@@ -1,7 +1,6 @@
 package eventstore
 
 import (
-	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -47,14 +46,10 @@ func TestJSONCodec_Marshall_Unmarshall(t *testing.T) {
 func TestJSONCodec_Marshall_UnmarshallWithType(t *testing.T) {
 	c := NewJSONCodec[carEvent]()
 	c.RegisterType("carSold", UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
-		var out carSold
-		err = json.Unmarshal(payload, &out)
-		return out, err
+		return BuildJSONUnmarshalFunc[carSold]()(payload)
 	}))
 	c.RegisterType("carRepaired", UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
-		var out carRepaired
-		err = json.Unmarshal(payload, &out)
-		return out, err
+		return BuildJSONUnmarshalFunc[carRepaired]()(payload)
 	}))
 
 	payload, err := c.Marshall(soldAMercedesForChristmas)

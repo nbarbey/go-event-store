@@ -32,3 +32,10 @@ func (j JSONCodec[E]) UnmarshallWithType(typeHint string, payload []byte) (event
 func (j JSONCodec[E]) RegisterType(s string, u Unmarshaller[E]) {
 	j.unmarshalers[s] = u
 }
+
+func BuildJSONUnmarshalFunc[E any]() UnmarshalerFunc[E] {
+	return func(payload []byte) (event E, err error) {
+		err = json.Unmarshal(payload, &event)
+		return event, err
+	}
+}
