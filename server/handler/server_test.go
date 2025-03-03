@@ -1,8 +1,9 @@
-package eventstore_test
+package handler_test
 
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/server/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net/http/httptest"
@@ -24,7 +25,7 @@ func TestServerPublish(t *testing.T) {
 	defer cancel()
 	es, err := eventstore.NewEventStore[TypicalEvent](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
-	server := eventstore.NewServerFromEventStore[TypicalEvent]("http://localhost:8080", es)
+	server := handler.NewServerFromEventStore[TypicalEvent]("http://localhost:8080", es)
 
 	testServer := httptest.NewServer(server)
 	testHTTPClient := testServer.Client()

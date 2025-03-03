@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/server/handler"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	}
 	defer es.Stop()
 
-	server := eventstore.NewServerFromEventStore[any]("localhost:8080", es)
+	server := handler.NewServerFromEventStore[any]("localhost:8080", es)
 	err = server.Start()
 	if err != nil {
 		panic(err)

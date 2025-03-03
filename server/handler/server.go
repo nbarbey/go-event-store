@@ -1,13 +1,14 @@
-package eventstore
+package handler
 
 import (
 	"encoding/json"
+	"github.com/nbarbey/go-event-store/eventstore"
 	"net/http"
 )
 
 type Server[E any] struct {
 	address    string
-	eventStore *EventStore[E]
+	eventStore *eventstore.EventStore[E]
 	*http.ServeMux
 }
 
@@ -17,7 +18,7 @@ func (e Server[E]) Start() error {
 
 func (e Server[E]) Stop() {}
 
-func NewServerFromEventStore[E any](hostname string, es *EventStore[E]) *Server[E] {
+func NewServerFromEventStore[E any](hostname string, es *eventstore.EventStore[E]) *Server[E] {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/publish", func(writer http.ResponseWriter, request *http.Request) {
 		var event E
