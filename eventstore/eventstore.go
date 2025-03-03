@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 )
 
 type EventStore[E any] struct {
-	connection    *pgx.Conn
+	connection    *pgxpool.Pool
 	listener      *pgxlisten.Listener
 	cancelFunc    context.CancelFunc
 	codec         Codec[E]
@@ -16,13 +17,13 @@ type EventStore[E any] struct {
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
-	conn, err := pgx.Connect(ctx, connStr)
+	pool, err := pgxpool.New(ctx, connStr)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
 	eventStore := EventStore[E]{
-		connection: conn,
+		connection: pool,
 		listener: &pgxlisten.Listener{
 			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
 		},

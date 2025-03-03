@@ -6,17 +6,18 @@ import (
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 )
 
 type Stream[E any] struct {
 	name       string
-	connection *pgx.Conn
+	connection *pgxpool.Pool
 	codec      Codec[E]
 	listener   *pgxlisten.Listener
 }
 
-func NewStream[E any](name string, connection *pgx.Conn, codec Codec[E], listener *pgxlisten.Listener) *Stream[E] {
+func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], listener *pgxlisten.Listener) *Stream[E] {
 	return &Stream[E]{name: name, connection: connection, codec: codec, listener: listener}
 }
 
@@ -42,7 +43,7 @@ func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 }
 
 func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
-	row := s.connection.QueryRow(ctx, "select payload from events where event_id=$1", eventId)
+	row := s.connection.QueryRow(ctx, "select payload from events where event_id=$1 and stream_id=$2", eventId, s.name)
 	var payload []byte
 	err = row.Scan(&payload)
 	if err != nil {
