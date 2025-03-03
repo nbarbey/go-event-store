@@ -26,7 +26,7 @@ func (s Stream[E]) Publish(ctx context.Context, event E) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.connection.Exec(ctx, "insert into events (event_id, stream_id, payload) values ($1, $2, $3)", guid.New(), s.name, data)
+	_, err = s.connection.Exec(ctx, "insert into events (event_id, stream_id, event_type, payload) values ($1, $2, $3, $4)", guid.New(), s.name, "", data)
 	return err
 }
 
@@ -53,7 +53,7 @@ func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err e
 }
 
 func (s Stream[E]) All(ctx context.Context) ([]E, error) {
-	rows, err := s.connection.Query(ctx, "select payload from events where stream_id=$1", s.name)
+	rows, err := s.connection.Query(ctx, "select event_type, payload from events where stream_id=$1", s.name)
 	if err != nil {
 		return nil, err
 	}

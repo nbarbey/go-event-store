@@ -90,7 +90,8 @@ func (e EventStore[E]) WithCodec(codec Codec[E]) {
 }
 
 type eventRow struct {
-	Payload []byte
+	EventType string
+	Payload   []byte
 }
 
 type eventRows []eventRow
