@@ -60,7 +60,7 @@ func (e EventStore[E]) Stop() {
 }
 
 func (e EventStore[E]) createTableAndTrigger(ctx context.Context) error {
-	_, err := e.connection.Exec(ctx, "create table if not exists events (event_id text, stream_id text, payload jsonb)")
+	_, err := e.connection.Exec(ctx, "create table if not exists events (event_id text, stream_id text, event_type text, payload jsonb)")
 	if err != nil {
 		return err
 	}
