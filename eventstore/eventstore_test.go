@@ -35,7 +35,7 @@ func TestEventStore(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
+	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t, "search_path=string_events"))
 	require.NoError(t, err)
 
 	stringEventStore.WithCodec(eventstore.NoopCodec{})
@@ -92,7 +92,7 @@ func TestEventStore(t *testing.T) {
 	type MyEvent struct {
 		Name string
 	}
-	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t))
+	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=my_events"))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestEventStore(t *testing.T) {
 		assert.Eventually(t, func() bool { return expected == received }, time.Second, time.Millisecond)
 	})
 
-	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t))
+	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=todo_events"))
 	require.NoError(t, err)
 	codec := eventstore.NewJSONCodec[todoEvent]()
 	codec.RegisterType("todoCreated", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {

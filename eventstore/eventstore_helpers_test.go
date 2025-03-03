@@ -31,16 +31,18 @@ func (c *testPostgresContainer) Port(t *testing.T) int {
 	return p.Int()
 }
 
-func (c *testPostgresContainer) ConnectionString(t *testing.T) string {
-	return fmt.Sprintf("postgres://%s:%s@127.0.0.1:%d/postgres", c.user, c.password, c.Port(t))
+func (c *testPostgresContainer) ConnectionString(t *testing.T, options string) string {
+	return fmt.Sprintf("postgres://%s:%s@127.0.0.1:%d/events?%s", c.user, c.password, c.Port(t), options)
 }
 func runTestContainer() (*testPostgresContainer, error) {
-	user, password := "user", "password"
+	user, password := "postgres", "password"
 	postgresContainer, err := postgres.Run(context.Background(),
 		"postgres:16-alpine",
 		postgres.WithDatabase("events"),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
+		postgres.WithInitScripts("helper_init_script.sql"),
+		testcontainers.WithLogger(log.Default()),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).
 			WithStartupTimeout(5*time.Second)),
