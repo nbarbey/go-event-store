@@ -1,6 +1,8 @@
 package eventstore
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type JSONCodec[E any] struct {
 	unmarshalers map[string]Unmarshaller[E]

@@ -9,6 +9,25 @@ import (
 	"time"
 )
 
+type todoEvent interface {
+	isTodoEvent()
+}
+
+type todoCreated struct{ Date time.Time }
+
+func (c todoCreated) isTodoEvent() {}
+
+type todoDone struct {
+	TodoID int
+	Date   time.Time
+}
+
+func (c todoDone) isTodoEvent() {}
+
+type todoDeleted struct{ TodoID int }
+
+func (c todoDeleted) isTodoEvent() {}
+
 func TestEventStore(t *testing.T) {
 	postgresContainer, err := runTestContainer()
 	require.NoError(t, err)
@@ -18,7 +37,8 @@ func TestEventStore(t *testing.T) {
 	defer cancel()
 	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t))
 	require.NoError(t, err)
-	stringEventStore.WithCodec(&eventstore.NoopCodec{})
+
+	stringEventStore.WithCodec(eventstore.NoopCodec{})
 
 	t.Run("publish and get all", func(t *testing.T) {
 		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
@@ -103,6 +123,52 @@ func TestEventStore(t *testing.T) {
 		assert.Eventually(t, func() bool {
 			return received == MyEvent{Name: "John"}
 		}, time.Second, 10*time.Millisecond)
+	})
+
+	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t))
+	require.NoError(t, err)
+	codec := eventstore.NewJSONCodec[todoEvent]()
+	codec.RegisterType("todoCreated", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return eventstore.BuildJSONUnmarshalFunc[todoCreated]()(payload)
+	}))
+	codec.RegisterType("todoDone", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return eventstore.BuildJSONUnmarshalFunc[todoDone]()(payload)
+	}))
+	codec.RegisterType("todoDeleted", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return eventstore.BuildJSONUnmarshalFunc[todoDeleted]()(payload)
+	}))
+	todoEventStore.WithCodec(codec)
+
+	t.Run("publish multiple events with different types on same stream", func(t *testing.T) {
+		var createdReceived todoCreated
+		var doneReceived todoDone
+		var deletedReceived todoDeleted
+		s := todoEventStore.Stream("todo-list-1")
+		s.Subscribe(eventstore.ConsumerFunc[todoEvent](func(e todoEvent) {
+			switch e.(type) {
+			case todoCreated:
+				createdReceived = e.(todoCreated)
+			case todoDone:
+				doneReceived = e.(todoDone)
+			case todoDeleted:
+				deletedReceived = e.(todoDeleted)
+			}
+		}))
+
+		startTestEventStore(t, todoEventStore)
+		defer customEventStore.Stop()
+
+		christmas := time.Date(2025, 12, 24, 0, 0, 0, 0, time.UTC)
+		created := todoCreated{Date: christmas}
+		require.NoError(t, s.WithType("todoCreated").Publish(context.Background(), created))
+		done := todoDone{TodoID: 1, Date: christmas}
+		require.NoError(t, s.WithType("todoDone").Publish(context.Background(), done))
+		deleted := todoDeleted{TodoID: 1}
+		require.NoError(t, s.WithType("todoDeleted").Publish(context.Background(), deleted))
+
+		assert.Eventually(t, func() bool { return created == createdReceived }, time.Second, 10*time.Millisecond)
+		assert.Eventually(t, func() bool { return done == doneReceived }, time.Second, 10*time.Millisecond)
+		assert.Eventually(t, func() bool { return deleted == deletedReceived }, time.Second, 10*time.Millisecond)
 	})
 
 }

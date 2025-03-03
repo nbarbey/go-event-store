@@ -58,11 +58,12 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	if err != nil {
 		return nil, err
 	}
-	ers, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
+	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
 		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
-	return UnmarshallAll[E](s.codec, eventRows(ers).payloads())
+	ers := eventRows(sliceOfEventRows)
+	return UnmarshallAllWithType[E](s.codec, ers.types(), ers.payloads())
 }
 
 func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {

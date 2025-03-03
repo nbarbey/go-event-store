@@ -14,6 +14,6 @@ func (n NoopCodec) Unmarshall(payload []byte) (event string, err error) {
 func (n NoopCodec) RegisterType(_ string, _ Unmarshaller[string]) {
 }
 
-func (n NoopCodec) UnmarshallWithType(_ string, _ []byte) (event string, err error) {
-	return "", nil
+func (n NoopCodec) UnmarshallWithType(_ string, payload []byte) (event string, err error) {
+	return string(payload), nil
 }
