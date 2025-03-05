@@ -20,11 +20,16 @@ func NewRepository[E any](connection *pgxpool.Pool, codec Codec[E]) *Repository[
 	return &Repository[E]{connection: connection, codec: codec}
 }
 
-func (r Repository[E]) Stream(name string) *Repository[E] {
+func (r *Repository[E]) WithCodec(codec Codec[E]) *Repository[E] {
+	r.codec = codec
+	return r
+}
+
+func (r *Repository[E]) Stream(name string) *Repository[E] {
 	return &Repository[E]{connection: r.connection, codec: r.codec, streamId: name}
 }
 
-func (r Repository[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
+func (r *Repository[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
 	row := r.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err = row.Scan(&er.EventType, &er.Payload)
@@ -34,7 +39,7 @@ func (r Repository[E]) getEvent(ctx context.Context, eventId string) (event E, e
 	return r.codec.UnmarshallWithType(er.EventType.String, er.Payload)
 }
 
-func (r Repository[E]) All(ctx context.Context) ([]E, error) {
+func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
 		return nil, err
@@ -47,7 +52,7 @@ func (r Repository[E]) All(ctx context.Context) ([]E, error) {
 	return UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
-func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte, expectedVersion string) error {
+func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte, expectedVersion string) error {
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
@@ -65,7 +70,7 @@ func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeH
 	return err
 }
 
-func (r Repository[E]) createTableAndTrigger(ctx context.Context) error {
+func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
 	_, err := r.connection.Exec(ctx,
 		"create table if not exists events (event_id text, stream_id text, event_type text, expectedVersion text, version text, payload text)")
 	if err != nil {

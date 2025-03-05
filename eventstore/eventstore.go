@@ -72,7 +72,7 @@ func (e *EventStore[E]) Stream(name string) *Stream[E] {
 }
 
 func (e *EventStore[E]) WithCodec(codec Codec[E]) {
-	e.Repository.codec = codec
+	e.Repository.WithCodec(codec)
 	e.defaultStream = e.Stream("default-stream")
 }
 
