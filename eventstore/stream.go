@@ -14,7 +14,7 @@ type Stream[E any] struct {
 	connection       *pgxpool.Pool
 	codec            Codec[E]
 	listener         *pgxlisten.Listener
-	defaultPublisher *TypedPublisher[E]
+	defaultPublisher *Publisher[E]
 }
 
 func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], listener *pgxlisten.Listener) *Stream[E] {
@@ -23,11 +23,11 @@ func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], lis
 		connection:       connection,
 		codec:            codec,
 		listener:         listener,
-		defaultPublisher: NewTypedPublisher[E]("", name, connection, codec),
+		defaultPublisher: NewPublisher[E]("", name, connection, codec, ""),
 	}
 }
 
-func (s Stream[E]) Publish(ctx context.Context, event E) error {
+func (s Stream[E]) Publish(ctx context.Context, event E) (version string, err error) {
 	return s.defaultPublisher.Publish(ctx, event)
 }
 
@@ -78,15 +78,10 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	return UnmarshallAllWithType[E](s.codec, ers.types(), ers.payloads())
 }
 
-func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {
-	return NewTypedPublisher[E](typeHint, s.name, s.connection, s.codec)
+func (s Stream[E]) WithType(typeHint string) *Publisher[E] {
+	return NewPublisher[E](typeHint, s.name, s.connection, s.codec, "")
 }
 
-func (s Stream[E]) ExpectedVersion(version string) *VersionedPublisher[E] {
-	return &VersionedPublisher[E]{
-		expectedVersion: version,
-		streamId:        s.name,
-		connection:      s.connection,
-		codec:           s.codec,
-	}
+func (s Stream[E]) ExpectedVersion(version string) *Publisher[E] {
+	return NewPublisher[E]("", s.name, s.connection, s.codec, version)
 }

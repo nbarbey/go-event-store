@@ -33,7 +33,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	return &eventStore, err
 }
 
-func (e *EventStore[E]) Publish(ctx context.Context, event E) error {
+func (e *EventStore[E]) Publish(ctx context.Context, event E) (version string, err error) {
 	return e.defaultStream.Publish(ctx, event)
 }
 
