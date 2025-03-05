@@ -82,11 +82,11 @@ func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {
 	return NewTypedPublisher[E](typeHint, s.name, s.connection, s.codec)
 }
 
-func (s Stream[E]) Version(version string) *VersionedPublisher[E] {
+func (s Stream[E]) ExpectedVersion(version string) *VersionedPublisher[E] {
 	return &VersionedPublisher[E]{
-		version:    version,
-		streamId:   s.name,
-		connection: s.connection,
-		codec:      s.codec,
+		expectedVersion: version,
+		streamId:        s.name,
+		connection:      s.connection,
+		codec:           s.codec,
 	}
 }

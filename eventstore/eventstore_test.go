@@ -135,7 +135,7 @@ func TestEventStore(t *testing.T) {
 		assert.Eventually(t, func() bool { return expected == received }, time.Second, time.Millisecond)
 	})
 
-	t.Run("publish with version", func(t *testing.T) {
+	t.Run("publish with expected version and reject if not expected", func(t *testing.T) {
 		var received MyEvent
 		myStream := customEventStore.Stream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
@@ -143,10 +143,16 @@ func TestEventStore(t *testing.T) {
 		startTestEventStore(t, customEventStore)
 		defer customEventStore.Stop()
 
-		require.NoError(t, myStream.Version("1").Publish(context.Background(), MyEvent{Name: "Rose"}))
+		version, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		require.NoError(t, err)
 
 		expected := MyEvent{Name: "Rose"}
 		assert.Eventually(t, func() bool { return expected == received }, 10*time.Second, time.Millisecond)
+		assert.NotEmpty(t, version)
+
+		_, err = myStream.ExpectedVersion("unexpected").Publish(context.Background(), MyEvent{Name: "Juan"})
+		assert.Error(t, err)
+
 	})
 
 	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=todo_events"))
