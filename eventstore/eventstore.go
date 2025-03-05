@@ -8,8 +8,6 @@ import (
 )
 
 type EventStore[E any] struct {
-	connection    *pgxpool.Pool
-	listener      *pgxlisten.Listener
 	defaultStream *Stream[E]
 	*Repository[E]
 }
@@ -20,12 +18,9 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	s := EventStore[E]{
-		connection: pool,
-		listener:   &pgxlisten.Listener{},
-	}
-	s.Repository = NewRepository[E](s.connection, NewJSONCodec[E]())
-	s.defaultStream = NewStream[E]("default-stream", s.Repository, s.listener)
+	s := EventStore[E]{}
+	s.Repository = NewRepository[E](pool, NewJSONCodec[E]())
+	s.defaultStream = NewStream[E]("default-stream", s.Repository, &pgxlisten.Listener{})
 	err = s.createTableAndTrigger(ctx)
 	return &s, err
 }
