@@ -20,13 +20,23 @@ func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec Codec[
 	return &Publisher[E]{streamId: streamId, connection: connection, codec: codec}
 }
 func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
-	p.typeHint = typeHint
-	return p
+	return &Publisher[E]{
+		streamId:        p.streamId,
+		connection:      p.connection,
+		codec:           p.codec,
+		expectedVersion: p.expectedVersion,
+		typeHint:        typeHint,
+	}
 }
 
 func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
-	p.expectedVersion = version
-	return p
+	return &Publisher[E]{
+		streamId:        p.streamId,
+		connection:      p.connection,
+		codec:           p.codec,
+		expectedVersion: version,
+		typeHint:        p.typeHint,
+	}
 }
 
 var ErrVersionMismatch = errors.New("mismatched version")
