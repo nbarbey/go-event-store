@@ -24,10 +24,6 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	}, err
 }
 
-func (e *EventStore[E]) GetStream(name string) *Stream[E] {
-	return e.Stream.New(name)
-}
-
 func (e *EventStore[E]) WithCodec(codec Codec[E]) {
 	e.Stream = e.Stream.WithCodec(codec)
 }

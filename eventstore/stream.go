@@ -21,7 +21,7 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	return s.Listener.All(ctx)
 }
 
-func (s Stream[E]) New(name string) *Stream[E] {
+func (s Stream[E]) GetStream(name string) *Stream[E] {
 	return NewStream[E](name, s.Listener.Repository, s.Listener.listener)
 }
 
