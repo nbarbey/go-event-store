@@ -20,3 +20,11 @@ func NewStream[E any](name string, repo *Repository[E], listener *pgxlisten.List
 func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 	return s.Listener.All(ctx)
 }
+
+func (s Stream[E]) New(name string) *Stream[E] {
+	return NewStream[E](name, s.Listener.Repository, s.Listener.listener)
+}
+
+func (s Stream[E]) WithCodec(codec Codec[E]) *Stream[E] {
+	return NewStream[E](s.Listener.streamId, s.Listener.Repository.WithCodec(codec), s.Listener.listener)
+}
