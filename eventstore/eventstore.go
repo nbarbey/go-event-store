@@ -3,7 +3,6 @@ package eventstore
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 )
@@ -11,7 +10,6 @@ import (
 type EventStore[E any] struct {
 	connection    *pgxpool.Pool
 	listener      *pgxlisten.Listener
-	cancelFunc    context.CancelFunc
 	defaultStream *Stream[E]
 	*Repository[E]
 }
@@ -45,26 +43,11 @@ func (e *EventStore[E]) All(ctx context.Context) ([]E, error) {
 }
 
 func (e *EventStore[E]) Start(ctx context.Context) error {
-	cancellableContext, cancel := context.WithCancel(ctx)
-	var conn *pgxpool.Conn
-	e.listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
-		var err error
-		conn, err = e.connection.Acquire(ctx)
-		return conn.Conn(), err
-	}
-	e.cancelFunc = func() {
-		cancel()
-		conn.Release()
-	}
-
-	go func() { _ = e.listener.Listen(cancellableContext) }()
-	return nil
+	return e.defaultStream.Start(ctx)
 }
 
 func (e *EventStore[E]) Stop() {
-	if e.cancelFunc != nil {
-		e.cancelFunc()
-	}
+	e.defaultStream.Stop()
 }
 
 func (e *EventStore[E]) Stream(name string) *Stream[E] {
