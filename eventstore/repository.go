@@ -34,7 +34,7 @@ func (r Repository[E]) getEvent(ctx context.Context, eventId string) (event E, e
 }
 
 func (r Repository[E]) All(ctx context.Context) ([]E, error) {
-	rows, err := r.connection.Query(ctx, "select event_type, payload from events where stream_id=$1", r.streamId)
+	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
 		return nil, err
 	}
@@ -54,9 +54,11 @@ func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeH
 }
 
 type eventRow struct {
+	EventID   string
 	EventType sql.NullString
-
-	Payload []byte
+	Version   sql.NullString
+	StreamID  sql.NullString
+	Payload   []byte
 }
 
 type eventRows []eventRow
