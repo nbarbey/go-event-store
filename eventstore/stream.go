@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 )
 
@@ -11,10 +10,10 @@ type Stream[E any] struct {
 	*Publisher[E]
 }
 
-func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], listener *pgxlisten.Listener) *Stream[E] {
+func NewStream[E any](name string, repo *Repository[E], listener *pgxlisten.Listener) *Stream[E] {
 	return &Stream[E]{
-		Listener:  NewListener[E](name, listener, connection, codec),
-		Publisher: NewPublisher[E](name, connection, codec),
+		Listener:  NewListener[E](name, listener, repo.connection, repo.codec),
+		Publisher: NewPublisher[E](name, repo.connection, repo.codec),
 	}
 }
 

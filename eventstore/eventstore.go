@@ -27,7 +27,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		listener:   &pgxlisten.Listener{},
 	}
 	s.Repository = NewRepository[E](s.connection, NewJSONCodec[E]())
-	s.defaultStream = NewStream[E]("default-stream", s.Repository.connection, s.Repository.codec, s.listener)
+	s.defaultStream = NewStream[E]("default-stream", s.Repository, s.listener)
 	err = s.createTableAndTrigger(ctx)
 	return &s, err
 }
@@ -68,7 +68,7 @@ func (e *EventStore[E]) Stop() {
 }
 
 func (e *EventStore[E]) Stream(name string) *Stream[E] {
-	return NewStream[E](name, e.defaultStream.connection, e.Repository.codec, e.defaultStream.listener)
+	return NewStream[E](name, e.Repository, e.defaultStream.listener)
 }
 
 func (e *EventStore[E]) WithCodec(codec Codec[E]) {
