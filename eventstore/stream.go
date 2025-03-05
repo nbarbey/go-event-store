@@ -43,6 +43,18 @@ func (s Stream[E]) Subscribe(consumer Consumer[E]) {
 	}))
 }
 
+func (s Stream[E]) SubscribeFromBeginning(ctx context.Context, consumer Consumer[E]) (err error) {
+	events, err := s.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, e := range events {
+		consumer.Consume(e)
+	}
+	s.Subscribe(consumer)
+	return nil
+}
+
 func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
 	row := s.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, s.name)
 	var er eventRow

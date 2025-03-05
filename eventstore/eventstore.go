@@ -98,6 +98,10 @@ func (e *EventStore[E]) WithCodec(codec Codec[E]) {
 	e.defaultStream = e.Stream("default-stream")
 }
 
+func (e *EventStore[E]) SubscribeFromBeginning(ctx context.Context, consumer ConsumerFunc[E]) error {
+	return e.defaultStream.SubscribeFromBeginning(ctx, consumer)
+}
+
 type eventRow struct {
 	EventType string
 	Payload   []byte

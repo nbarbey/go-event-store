@@ -73,6 +73,19 @@ func TestEventStore(t *testing.T) {
 			return "my_event_data" == string(received)
 		}, time.Second, 10*time.Millisecond)
 	})
+	t.Run("subsribe from beginning", func(t *testing.T) {
+		require.NoError(t, stringEventStore.Publish(context.Background(), "my_event_data"))
+
+		var received string
+		require.NoError(t, stringEventStore.SubscribeFromBeginning(context.Background(), makeTestConsumer[string](&received)))
+
+		startTestEventStore(t, stringEventStore)
+		defer stringEventStore.Stop()
+
+		assert.Eventually(t, func() bool {
+			return "my_event_data" == string(received)
+		}, time.Second, 10*time.Millisecond)
+	})
 	t.Run("publish to some stream and not others", func(t *testing.T) {
 		var received string
 		stringEventStore.Stream("some-string-stream").Subscribe(makeTestConsumer[string](&received))
