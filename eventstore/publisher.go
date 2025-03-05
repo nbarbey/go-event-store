@@ -4,53 +4,44 @@ import (
 	"context"
 	"errors"
 	"github.com/beevik/guid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Publisher[E any] struct {
 	typeHint        string
 	expectedVersion string
 	streamId        string
-	connection      *pgxpool.Pool
-	codec           Codec[E]
 	*Repository[E]
 }
 
-func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec Codec[E]) *Publisher[E] {
+func NewPublisher[E any](streamId string, repo *Repository[E]) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:   streamId,
-		connection: connection,
-		codec:      codec,
-		Repository: NewRepository[E](connection, codec),
+		Repository: repo,
 	}
 }
 
 func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:        p.streamId,
-		connection:      p.connection,
-		codec:           p.codec,
 		expectedVersion: p.expectedVersion,
 		typeHint:        typeHint,
-		Repository:      NewRepository[E](p.connection, p.codec),
+		Repository:      p.Repository,
 	}
 }
 
 func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:        p.streamId,
-		connection:      p.connection,
-		codec:           p.codec,
 		expectedVersion: version,
 		typeHint:        p.typeHint,
-		Repository:      NewRepository[E](p.connection, p.codec),
+		Repository:      p.Repository,
 	}
 }
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
 func (p *Publisher[E]) Publish(ctx context.Context, event E) (version string, err error) {
-	data, err := p.codec.Marshall(event)
+	data, err := p.Repository.codec.Marshall(event)
 	if err != nil {
 		return
 	}
