@@ -2,6 +2,7 @@ package eventstore
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
@@ -50,4 +51,28 @@ func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeH
 		"insert into events (event_id, stream_id, event_type, version, payload) values ($1, $2, $3, $4, $5)",
 		guid.New(), streamId, typeHint, version, data)
 	return err
+}
+
+type eventRow struct {
+	EventType sql.NullString
+
+	Payload []byte
+}
+
+type eventRows []eventRow
+
+func (ers eventRows) payloads() [][]byte {
+	payloads := make([][]byte, 0)
+	for _, e := range ers {
+		payloads = append(payloads, e.Payload)
+	}
+	return payloads
+}
+
+func (ers eventRows) types() []string {
+	types := make([]string, 0)
+	for _, e := range ers {
+		types = append(types, e.EventType.String)
+	}
+	return types
 }

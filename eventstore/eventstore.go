@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -102,27 +101,4 @@ func (e *EventStore[E]) WithCodec(codec Codec[E]) {
 
 func (e *EventStore[E]) SubscribeFromBeginning(ctx context.Context, consumer ConsumerFunc[E]) error {
 	return e.defaultStream.SubscribeFromBeginning(ctx, consumer)
-}
-
-type eventRow struct {
-	EventType sql.NullString
-	Payload   []byte
-}
-
-type eventRows []eventRow
-
-func (ers eventRows) payloads() [][]byte {
-	payloads := make([][]byte, 0)
-	for _, e := range ers {
-		payloads = append(payloads, e.Payload)
-	}
-	return payloads
-}
-
-func (ers eventRows) types() []string {
-	types := make([]string, 0)
-	for _, e := range ers {
-		types = append(types, e.EventType.String)
-	}
-	return types
 }
