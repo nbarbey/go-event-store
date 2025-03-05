@@ -24,10 +24,8 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 
 	eventStore := EventStore[E]{
 		connection: pool,
-		listener: &pgxlisten.Listener{
-			Connect: func(ctx context.Context) (*pgx.Conn, error) { return pgx.Connect(ctx, connStr) },
-		},
-		codec: NewJSONCodec[E](),
+		listener:   &pgxlisten.Listener{},
+		codec:      NewJSONCodec[E](),
 	}
 	eventStore.defaultStream = eventStore.Stream("default-stream")
 	err = eventStore.createTableAndTrigger(ctx)
@@ -48,7 +46,17 @@ func (e *EventStore[E]) All(ctx context.Context) ([]E, error) {
 
 func (e *EventStore[E]) Start(ctx context.Context) error {
 	cancellableContext, cancel := context.WithCancel(ctx)
-	e.cancelFunc = cancel
+	var conn *pgxpool.Conn
+	e.listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
+		var err error
+		conn, err = e.connection.Acquire(ctx)
+		return conn.Conn(), err
+	}
+	e.cancelFunc = func() {
+		cancel()
+		conn.Release()
+	}
+
 	go func() { _ = e.listener.Listen(cancellableContext) }()
 	return nil
 }
