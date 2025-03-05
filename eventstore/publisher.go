@@ -16,8 +16,8 @@ type Publisher[E any] struct {
 	codec           Codec[E]
 }
 
-func NewPublisher[E any](typeHint string, streamId string, connection *pgxpool.Pool, codec Codec[E], expectedVersion string) *Publisher[E] {
-	return &Publisher[E]{typeHint: typeHint, streamId: streamId, connection: connection, codec: codec, expectedVersion: expectedVersion}
+func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec Codec[E]) *Publisher[E] {
+	return &Publisher[E]{streamId: streamId, connection: connection, codec: codec}
 }
 func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
 	p.typeHint = typeHint

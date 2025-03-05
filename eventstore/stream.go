@@ -23,7 +23,7 @@ func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], lis
 		connection:       connection,
 		codec:            codec,
 		listener:         listener,
-		defaultPublisher: NewPublisher[E]("", name, connection, codec, ""),
+		defaultPublisher: NewPublisher[E](name, connection, codec),
 	}
 }
 
@@ -79,9 +79,9 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 }
 
 func (s Stream[E]) WithType(typeHint string) *Publisher[E] {
-	return NewPublisher[E](typeHint, s.name, s.connection, s.codec, "")
+	return NewPublisher[E](s.name, s.connection, s.codec).WithType(typeHint)
 }
 
 func (s Stream[E]) ExpectedVersion(version string) *Publisher[E] {
-	return NewPublisher[E]("", s.name, s.connection, s.codec, version)
+	return NewPublisher[E](s.name, s.connection, s.codec).ExpectedVersion(version)
 }
