@@ -62,7 +62,7 @@ func (s Stream[E]) getEvent(ctx context.Context, eventId string) (event E, err e
 	if err != nil {
 		return event, err
 	}
-	return s.codec.UnmarshallWithType(er.EventType, er.Payload)
+	return s.codec.UnmarshallWithType(er.EventType.String, er.Payload)
 }
 
 func (s Stream[E]) All(ctx context.Context) ([]E, error) {
@@ -80,4 +80,13 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 
 func (s Stream[E]) WithType(typeHint string) *TypedPublisher[E] {
 	return NewTypedPublisher[E](typeHint, s.name, s.connection, s.codec)
+}
+
+func (s Stream[E]) Version(version string) *VersionedPublisher[E] {
+	return &VersionedPublisher[E]{
+		version:    version,
+		streamId:   s.name,
+		connection: s.connection,
+		codec:      s.codec,
+	}
 }

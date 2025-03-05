@@ -2,6 +2,7 @@ package eventstore
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -68,7 +69,8 @@ func (e *EventStore[E]) Stop() {
 }
 
 func (e *EventStore[E]) createTableAndTrigger(ctx context.Context) error {
-	_, err := e.connection.Exec(ctx, "create table if not exists events (event_id text, stream_id text, event_type text, payload text)")
+	_, err := e.connection.Exec(ctx,
+		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text)")
 	if err != nil {
 		return err
 	}
@@ -103,7 +105,7 @@ func (e *EventStore[E]) SubscribeFromBeginning(ctx context.Context, consumer Con
 }
 
 type eventRow struct {
-	EventType string
+	EventType sql.NullString
 	Payload   []byte
 }
 
@@ -120,7 +122,7 @@ func (ers eventRows) payloads() [][]byte {
 func (ers eventRows) types() []string {
 	types := make([]string, 0)
 	for _, e := range ers {
-		types = append(types, e.EventType)
+		types = append(types, e.EventType.String)
 	}
 	return types
 }
