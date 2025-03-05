@@ -3,6 +3,7 @@ package eventstore
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
@@ -46,7 +47,18 @@ func (r Repository[E]) All(ctx context.Context) ([]E, error) {
 	return UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
-func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte) error {
+func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte, expectedVersion string) error {
+	if expectedVersion != "" {
+		row := r.connection.QueryRow(ctx,
+			"select event_id from events where stream_id=$1 and version=$2",
+			streamId, expectedVersion)
+		var eventIDWithExpectedVersion string
+		err := row.Scan(&eventIDWithExpectedVersion)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrVersionMismatch
+		}
+	}
+
 	_, err := r.connection.Exec(ctx,
 		"insert into events (event_id, stream_id, event_type, version, payload) values ($1, $2, $3, $4, $5)",
 		guid.New(), streamId, typeHint, version, data)
