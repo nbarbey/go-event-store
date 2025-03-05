@@ -14,11 +14,18 @@ type Publisher[E any] struct {
 	streamId        string
 	connection      *pgxpool.Pool
 	codec           Codec[E]
+	*Repository[E]
 }
 
 func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec Codec[E]) *Publisher[E] {
-	return &Publisher[E]{streamId: streamId, connection: connection, codec: codec}
+	return &Publisher[E]{
+		streamId:   streamId,
+		connection: connection,
+		codec:      codec,
+		Repository: NewRepository[E](connection, codec),
+	}
 }
+
 func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:        p.streamId,
@@ -26,6 +33,7 @@ func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
 		codec:           p.codec,
 		expectedVersion: p.expectedVersion,
 		typeHint:        typeHint,
+		Repository:      NewRepository[E](p.connection, p.codec),
 	}
 }
 
@@ -36,6 +44,7 @@ func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
 		codec:           p.codec,
 		expectedVersion: version,
 		typeHint:        p.typeHint,
+		Repository:      NewRepository[E](p.connection, p.codec),
 	}
 }
 
@@ -59,8 +68,6 @@ func (p *Publisher[E]) Publish(ctx context.Context, event E) (version string, er
 	}
 	version = guid.New().String()
 
-	_, err = p.connection.Exec(ctx,
-		"insert into events (event_id, stream_id, event_type, version, payload) values ($1, $2, $3, $4, $5)",
-		guid.New(), p.streamId, p.typeHint, version, data)
+	err = p.insertEvent(ctx, p.streamId, version, p.typeHint, data)
 	return
 }

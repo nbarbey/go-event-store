@@ -1,6 +1,7 @@
 package eventstore
 
 import (
+	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 )
@@ -15,4 +16,8 @@ func NewStream[E any](name string, connection *pgxpool.Pool, codec Codec[E], lis
 		Listener:  NewListener[E](name, listener, connection, codec),
 		Publisher: NewPublisher[E](name, connection, codec),
 	}
+}
+
+func (s Stream[E]) All(ctx context.Context) ([]E, error) {
+	return s.Listener.All(ctx)
 }

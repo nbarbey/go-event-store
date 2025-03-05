@@ -3,6 +3,7 @@ package eventstore
 import (
 	"context"
 	"fmt"
+	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -42,4 +43,11 @@ func (r Repository[E]) All(ctx context.Context) ([]E, error) {
 	}
 	ers := eventRows(sliceOfEventRows)
 	return UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
+}
+
+func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte) error {
+	_, err := r.connection.Exec(ctx,
+		"insert into events (event_id, stream_id, event_type, version, payload) values ($1, $2, $3, $4, $5)",
+		guid.New(), streamId, typeHint, version, data)
+	return err
 }
