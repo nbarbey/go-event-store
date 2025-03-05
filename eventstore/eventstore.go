@@ -8,7 +8,7 @@ import (
 )
 
 type EventStore[E any] struct {
-	defaultStream *Stream[E]
+	*Stream[E]
 	*Repository[E]
 }
 
@@ -18,42 +18,23 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	s := EventStore[E]{}
-	s.Repository = NewRepository[E](pool, NewJSONCodec[E]())
-	s.defaultStream = NewStream[E]("default-stream", s.Repository, &pgxlisten.Listener{})
-	err = s.createTableAndTrigger(ctx)
-	return &s, err
-}
-
-func (e *EventStore[E]) Publish(ctx context.Context, event E) (version string, err error) {
-	return e.defaultStream.Publish(ctx, event)
-}
-
-func (e *EventStore[E]) Subscribe(consumer Consumer[E]) {
-	e.defaultStream.Subscribe(consumer)
+	repository := NewRepository[E](pool, NewJSONCodec[E]())
+	err = repository.createTableAndTrigger(ctx)
+	return &EventStore[E]{
+		Repository: repository,
+		Stream:     NewStream[E]("default-stream", repository, &pgxlisten.Listener{}),
+	}, err
 }
 
 func (e *EventStore[E]) All(ctx context.Context) ([]E, error) {
-	return e.defaultStream.All(ctx)
+	return e.Stream.All(ctx)
 }
 
-func (e *EventStore[E]) Start(ctx context.Context) error {
-	return e.defaultStream.Start(ctx)
-}
-
-func (e *EventStore[E]) Stop() {
-	e.defaultStream.Stop()
-}
-
-func (e *EventStore[E]) Stream(name string) *Stream[E] {
-	return NewStream[E](name, e.Repository, e.defaultStream.listener)
+func (e *EventStore[E]) GetStream(name string) *Stream[E] {
+	return NewStream[E](name, e.Repository, e.Stream.listener)
 }
 
 func (e *EventStore[E]) WithCodec(codec Codec[E]) {
 	e.Repository.WithCodec(codec)
-	e.defaultStream = e.Stream("default-stream")
-}
-
-func (e *EventStore[E]) SubscribeFromBeginning(ctx context.Context, consumer ConsumerFunc[E]) error {
-	return e.defaultStream.SubscribeFromBeginning(ctx, consumer)
+	e.Stream = e.GetStream("default-stream")
 }

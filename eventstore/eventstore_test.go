@@ -50,7 +50,7 @@ func TestEventStore(t *testing.T) {
 		assert.Equal(t, "my_event_data", events[0])
 	})
 	t.Run("publish and get all of one stream", func(t *testing.T) {
-		stream := stringEventStore.Stream("awesome-string-stream")
+		stream := stringEventStore.GetStream("awesome-string-stream")
 
 		_, err := stringEventStore.Publish(context.Background(), "default stream data")
 		require.NoError(t, err)
@@ -93,14 +93,14 @@ func TestEventStore(t *testing.T) {
 	})
 	t.Run("publish to some stream and not others", func(t *testing.T) {
 		var received string
-		stringEventStore.Stream("some-string-stream").Subscribe(makeTestConsumer[string](&received))
+		stringEventStore.GetStream("some-string-stream").Subscribe(makeTestConsumer[string](&received))
 		var receivedOther string
-		stringEventStore.Stream("other-string-stream").Subscribe(makeTestConsumer[string](&receivedOther))
+		stringEventStore.GetStream("other-string-stream").Subscribe(makeTestConsumer[string](&receivedOther))
 
 		startTestEventStore(t, stringEventStore)
 		defer stringEventStore.Stop()
 
-		_, err := stringEventStore.Stream("some-string-stream").Publish(context.Background(), "my_event_data")
+		_, err := stringEventStore.GetStream("some-string-stream").Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool {
@@ -116,7 +116,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
 		var received MyEvent
-		myStream := customEventStore.Stream("my-custom-event-stream")
+		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
 		startTestEventStore(t, customEventStore)
@@ -130,7 +130,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("publish with type", func(t *testing.T) {
 		var received MyEvent
-		myStream := customEventStore.Stream("my-custom-event-stream")
+		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
 		startTestEventStore(t, customEventStore)
@@ -145,7 +145,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("publish with expected version and reject if not expected", func(t *testing.T) {
 		var received MyEvent
-		myStream := customEventStore.Stream("my-custom-event-stream")
+		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
 		startTestEventStore(t, customEventStore)
@@ -165,7 +165,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("publish with type and expected version", func(t *testing.T) {
 		var received MyEvent
-		myStream := customEventStore.Stream("my-incredible-stream")
+		myStream := customEventStore.GetStream("my-incredible-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
 		startTestEventStore(t, customEventStore)
@@ -179,7 +179,7 @@ func TestEventStore(t *testing.T) {
 
 	t.Run("publish with expected version and accept if expected matches actual version", func(t *testing.T) {
 		var received MyEvent
-		myStream := customEventStore.Stream("my-custom-event-stream")
+		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
 		startTestEventStore(t, customEventStore)
@@ -214,7 +214,7 @@ func TestEventStore(t *testing.T) {
 		var createdReceived todoCreated
 		var doneReceived todoDone
 		var deletedReceived todoDeleted
-		s := todoEventStore.Stream("todo-list-1")
+		s := todoEventStore.GetStream("todo-list-1")
 		s.Subscribe(eventstore.ConsumerFunc[todoEvent](func(e todoEvent) {
 			switch e.(type) {
 			case todoCreated:
