@@ -14,6 +14,7 @@ type EventStore[E any] struct {
 	cancelFunc    context.CancelFunc
 	codec         Codec[E]
 	defaultStream *Stream[E]
+	*Repository[E]
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
@@ -28,6 +29,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		codec:      NewJSONCodec[E](),
 	}
 	eventStore.defaultStream = eventStore.Stream("default-stream")
+	eventStore.Repository = NewRepository[E](eventStore.connection, eventStore.codec)
 	err = eventStore.createTableAndTrigger(ctx)
 	return &eventStore, err
 }
@@ -65,29 +67,6 @@ func (e *EventStore[E]) Stop() {
 	if e.cancelFunc != nil {
 		e.cancelFunc()
 	}
-}
-
-func (e *EventStore[E]) createTableAndTrigger(ctx context.Context) error {
-	_, err := e.connection.Exec(ctx,
-		"create table if not exists events (event_id text, stream_id text, event_type text, expectedVersion text, version text, payload text)")
-	if err != nil {
-		return err
-	}
-	_, err = e.connection.Exec(ctx, `create or replace function "doNotify"()
-  		returns trigger as $$
-			declare 
-			begin
-  			perform pg_notify(new.stream_id, new.event_id);
-  		return new;
-		end;
-		$$ language plpgsql;`)
-	if err != nil {
-		return err
-	}
-	_, err = e.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
-								after insert on events
-								for each row execute procedure "doNotify"()`)
-	return err
 }
 
 func (e *EventStore[E]) Stream(name string) *Stream[E] {

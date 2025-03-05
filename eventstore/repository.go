@@ -65,6 +65,29 @@ func (r Repository[E]) insertEvent(ctx context.Context, streamId, version, typeH
 	return err
 }
 
+func (r Repository[E]) createTableAndTrigger(ctx context.Context) error {
+	_, err := r.connection.Exec(ctx,
+		"create table if not exists events (event_id text, stream_id text, event_type text, expectedVersion text, version text, payload text)")
+	if err != nil {
+		return err
+	}
+	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
+  		returns trigger as $$
+			declare 
+			begin
+  			perform pg_notify(new.stream_id, new.event_id);
+  		return new;
+		end;
+		$$ language plpgsql;`)
+	if err != nil {
+		return err
+	}
+	_, err = r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
+								after insert on events
+								for each row execute procedure "doNotify"()`)
+	return err
+}
+
 type eventRow struct {
 	EventID   string
 	EventType sql.NullString
