@@ -12,7 +12,6 @@ type EventStore[E any] struct {
 	connection    *pgxpool.Pool
 	listener      *pgxlisten.Listener
 	cancelFunc    context.CancelFunc
-	codec         Codec[E]
 	defaultStream *Stream[E]
 	*Repository[E]
 }
@@ -23,15 +22,14 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	eventStore := EventStore[E]{
+	s := EventStore[E]{
 		connection: pool,
 		listener:   &pgxlisten.Listener{},
-		codec:      NewJSONCodec[E](),
 	}
-	eventStore.defaultStream = eventStore.Stream("default-stream")
-	eventStore.Repository = NewRepository[E](eventStore.connection, eventStore.codec)
-	err = eventStore.createTableAndTrigger(ctx)
-	return &eventStore, err
+	s.Repository = NewRepository[E](s.connection, NewJSONCodec[E]())
+	s.defaultStream = NewStream[E]("default-stream", s.Repository.connection, s.Repository.codec, s.listener)
+	err = s.createTableAndTrigger(ctx)
+	return &s, err
 }
 
 func (e *EventStore[E]) Publish(ctx context.Context, event E) (version string, err error) {
@@ -70,11 +68,11 @@ func (e *EventStore[E]) Stop() {
 }
 
 func (e *EventStore[E]) Stream(name string) *Stream[E] {
-	return NewStream[E](name, e.connection, e.codec, e.listener)
+	return NewStream[E](name, e.defaultStream.connection, e.Repository.codec, e.defaultStream.listener)
 }
 
 func (e *EventStore[E]) WithCodec(codec Codec[E]) {
-	e.codec = codec
+	e.Repository.codec = codec
 	e.defaultStream = e.Stream("default-stream")
 }
 
