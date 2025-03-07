@@ -1,19 +1,19 @@
 package eventstore
 
-type NoopCodec struct {
+type NoopCodec[E string | []byte] struct {
 }
 
-func (n NoopCodec) Marshall(event string) ([]byte, error) {
+func (n NoopCodec[E]) Marshall(event E) ([]byte, error) {
 	return []byte(event), nil
 }
 
-func (n NoopCodec) Unmarshall(payload []byte) (event string, err error) {
-	return string(payload), nil
+func (n NoopCodec[E]) Unmarshall(payload []byte) (event E, err error) {
+	return E(payload), nil
 }
 
-func (n NoopCodec) RegisterType(_ string, _ Unmarshaller[string]) {
+func (n NoopCodec[E]) RegisterType(_ string, _ Unmarshaller[string]) {
 }
 
-func (n NoopCodec) UnmarshallWithType(_ string, payload []byte) (event string, err error) {
-	return string(payload), nil
+func (n NoopCodec[E]) UnmarshallWithType(_ string, payload []byte) (event E, err error) {
+	return E(payload), nil
 }
