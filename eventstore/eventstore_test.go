@@ -200,10 +200,12 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		version, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		_, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Rose"} == received }, 10*time.Second, time.Millisecond)
+		version, err := myStream.Version(context.Background())
+		require.NoError(t, err)
 		assert.NotEmpty(t, version)
 
 		_, err = myStream.ExpectedVersion(version).Publish(context.Background(), MyEvent{Name: "Juan"})

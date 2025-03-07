@@ -28,3 +28,7 @@ func (s Stream[E]) GetStream(name string) *Stream[E] {
 func (s Stream[E]) WithCodec(codec Codec[E]) *Stream[E] {
 	return NewStream[E](s.Listener.streamId, s.Listener.Repository.WithCodec(codec), s.Listener.listener)
 }
+
+func (s Stream[E]) Version(ctx context.Context) (string, error) {
+	return s.Listener.Repository.Version(ctx)
+}

@@ -72,7 +72,7 @@ func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, type
 
 func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
 	_, err := r.connection.Exec(ctx,
-		"create table if not exists events (event_id text, stream_id text, event_type text, expectedVersion text, version text, payload text)")
+		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text)")
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,12 @@ func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
 								after insert on events
 								for each row execute procedure "doNotify"()`)
 	return err
+}
+
+func (r *Repository[E]) Version(ctx context.Context) (version string, err error) {
+	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1", r.streamId)
+	err = row.Scan(&version)
+	return
 }
 
 type eventRow struct {
