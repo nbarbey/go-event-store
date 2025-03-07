@@ -72,12 +72,31 @@ func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, type
 }
 
 func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
-	_, err := r.connection.Exec(ctx,
-		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text, created_at timestamp )")
+	err := r.createEventsTable(ctx)
 	if err != nil {
 		return err
 	}
+	err = r.createNotificationFunction(ctx, err)
+	if err != nil {
+		return err
+	}
+	return r.createNewEventNotificationTrigger(ctx, err)
+}
 
+func (r *Repository[E]) createEventsTable(ctx context.Context) error {
+	_, err := r.connection.Exec(ctx,
+		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text, created_at timestamp )")
+	return err
+}
+
+func (r *Repository[E]) createNewEventNotificationTrigger(ctx context.Context, err error) error {
+	_, err = r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
+								after insert on events
+								for each row execute procedure "doNotify"()`)
+	return err
+}
+
+func (r *Repository[E]) createNotificationFunction(ctx context.Context, err error) error {
 	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
 			declare 
@@ -86,12 +105,6 @@ func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
   		return new;
 		end;
 		$$ language plpgsql;`)
-	if err != nil {
-		return err
-	}
-	_, err = r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
-								after insert on events
-								for each row execute procedure "doNotify"()`)
 	return err
 }
 
