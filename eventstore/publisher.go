@@ -40,13 +40,11 @@ func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
-func (p *Publisher[E]) Publish(ctx context.Context, event E) (version string, err error) {
+func (p *Publisher[E]) Publish(ctx context.Context, event E) (err error) {
 	data, err := p.Repository.codec.Marshall(event)
 	if err != nil {
 		return
 	}
-	version = guid.New().String()
-
-	err = p.insertEvent(ctx, p.streamId, version, p.typeHint, data, p.expectedVersion)
+	err = p.insertEvent(ctx, p.streamId, guid.New().String(), p.typeHint, data, p.expectedVersion)
 	return
 }

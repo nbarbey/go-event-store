@@ -27,7 +27,7 @@ func NewServerFromEventStore[E any](hostname string, es *eventstore.EventStore[E
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		_, err = es.Publish(request.Context(), event)
+		err = es.Publish(request.Context(), event)
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
 			return

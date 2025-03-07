@@ -81,7 +81,7 @@ func (a Account) PrintStatement() string {
 }
 
 func (a Account) Withdraw(amount int) {
-	_, err := a.
+	err := a.
 		stream.
 		WithType("WithdrawEvent").
 		Publish(context.Background(), WithdrawEvent{Amount: amount})
@@ -91,7 +91,7 @@ func (a Account) Withdraw(amount int) {
 }
 
 func (a Account) Deposit(amount int) {
-	_, err := a.
+	err := a.
 		stream.
 		WithType("DepositEvent").
 		Publish(context.Background(), DepositEvent{Amount: amount})

@@ -41,7 +41,7 @@ func TestEventStore(t *testing.T) {
 	stringEventStore.WithCodec(eventstore.NoopCodec{})
 
 	t.Run("publish and get all", func(t *testing.T) {
-		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
+		err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 		events, err := stringEventStore.All(context.Background())
 		require.NoError(t, err)
@@ -52,9 +52,9 @@ func TestEventStore(t *testing.T) {
 	t.Run("publish and get all of one stream", func(t *testing.T) {
 		stream := stringEventStore.GetStream("awesome-string-stream")
 
-		_, err := stringEventStore.Publish(context.Background(), "default stream data")
+		err := stringEventStore.Publish(context.Background(), "default stream data")
 		require.NoError(t, err)
-		_, err = stream.Publish(context.Background(), "some other stream data")
+		err = stream.Publish(context.Background(), "some other stream data")
 		require.NoError(t, err)
 
 		events, err := stream.All(context.Background())
@@ -70,7 +70,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
+		err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool {
@@ -85,7 +85,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
+		err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool {
@@ -93,7 +93,7 @@ func TestEventStore(t *testing.T) {
 		}, time.Second, 10*time.Millisecond)
 	})
 	t.Run("subscribe from beginning", func(t *testing.T) {
-		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
+		err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
 		var received string
@@ -115,7 +115,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := stringEventStore.GetStream("some-string-stream").Publish(context.Background(), "my_event_data")
+		err := stringEventStore.GetStream("some-string-stream").Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool {
@@ -137,7 +137,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := myStream.Publish(context.Background(), MyEvent{Name: "John"})
+		err := myStream.Publish(context.Background(), MyEvent{Name: "John"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return received == MyEvent{Name: "John"} }, time.Second, 10*time.Millisecond)
@@ -151,7 +151,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"})
+		err := myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"})
 		require.NoError(t, err)
 
 		expected := MyEvent{Name: "John"}
@@ -166,14 +166,13 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		version, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
 
 		expected := MyEvent{Name: "Rose"}
 		assert.Eventually(t, func() bool { return expected == received }, 10*time.Second, time.Millisecond)
-		assert.NotEmpty(t, version)
 
-		_, err = myStream.ExpectedVersion("unexpected").Publish(context.Background(), MyEvent{Name: "Juan"})
+		err = myStream.ExpectedVersion("unexpected").Publish(context.Background(), MyEvent{Name: "Juan"})
 		assert.Error(t, err)
 
 	})
@@ -186,7 +185,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := myStream.ExpectedVersion("").WithType("my_event_type").Publish(context.Background(), MyEvent{Name: "Felipe"})
+		err := myStream.ExpectedVersion("").WithType("my_event_type").Publish(context.Background(), MyEvent{Name: "Felipe"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Felipe"} == received }, time.Second, time.Millisecond)
@@ -200,7 +199,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Rose"} == received }, 10*time.Second, time.Millisecond)
@@ -208,7 +207,7 @@ func TestEventStore(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, version)
 
-		_, err = myStream.ExpectedVersion(version).Publish(context.Background(), MyEvent{Name: "Juan"})
+		err = myStream.ExpectedVersion(version).Publish(context.Background(), MyEvent{Name: "Juan"})
 		assert.NoError(t, err)
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Juan"} == received }, 10*time.Second, time.Millisecond)
 	})
@@ -221,7 +220,7 @@ func TestEventStore(t *testing.T) {
 		// give time for listener to be set-up properly
 		time.Sleep(10 * time.Millisecond)
 
-		_, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Rose"} == received }, 10*time.Second, time.Millisecond)
@@ -229,7 +228,7 @@ func TestEventStore(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotEmpty(t, version1)
 
-		_, err = myStream.ExpectedVersion(version1).Publish(context.Background(), MyEvent{Name: "Tiphaine"})
+		err = myStream.ExpectedVersion(version1).Publish(context.Background(), MyEvent{Name: "Tiphaine"})
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Tiphaine"} == received }, 10*time.Second, time.Millisecond)
@@ -275,13 +274,13 @@ func TestEventStore(t *testing.T) {
 
 		christmas := time.Date(2025, 12, 24, 0, 0, 0, 0, time.UTC)
 		created := todoCreated{Date: christmas}
-		_, err := s.WithType("todoCreated").Publish(context.Background(), created)
+		err := s.WithType("todoCreated").Publish(context.Background(), created)
 		require.NoError(t, err)
 		done := todoDone{TodoID: 1, Date: christmas}
-		_, err = s.WithType("todoDone").Publish(context.Background(), done)
+		err = s.WithType("todoDone").Publish(context.Background(), done)
 		require.NoError(t, err)
 		deleted := todoDeleted{TodoID: 1}
-		_, err = s.WithType("todoDeleted").Publish(context.Background(), deleted)
+		err = s.WithType("todoDeleted").Publish(context.Background(), deleted)
 		require.NoError(t, err)
 
 		assert.Eventually(t, func() bool { return created == createdReceived }, time.Second, time.Millisecond)
