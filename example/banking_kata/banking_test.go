@@ -74,7 +74,6 @@ func runTestContainer() (*testPostgresContainer, error) {
 		postgres.WithDatabase("events"),
 		postgres.WithUsername(user),
 		postgres.WithPassword(password),
-		postgres.WithInitScripts("helper_init_script.sql"),
 		testcontainers.WithLogger(log.Default()),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).
