@@ -5,9 +5,23 @@ import (
 	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 	"time"
 )
+
+var postgresContainer *testPostgresContainer
+
+func TestMain(m *testing.M) {
+	var err error
+	postgresContainer, err = runTestContainer()
+	if err != nil {
+		panic(err)
+	}
+	defer postgresContainer.Cancel()
+
+	os.Exit(m.Run())
+}
 
 type todoEvent interface {
 	isTodoEvent()
@@ -29,9 +43,6 @@ type todoDeleted struct{ TodoID int }
 func (c todoDeleted) isTodoEvent() {}
 
 func TestEventStore(t *testing.T) {
-	postgresContainer, err := runTestContainer()
-	require.NoError(t, err)
-	defer postgresContainer.Cancel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
