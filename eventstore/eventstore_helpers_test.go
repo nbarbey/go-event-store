@@ -3,6 +3,7 @@ package eventstore_test
 import (
 	"context"
 	"fmt"
+	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -49,4 +50,10 @@ func runTestContainer() (*testPostgresContainer, error) {
 	)
 
 	return &testPostgresContainer{user: user, password: password, PostgresContainer: postgresContainer}, err
+}
+
+func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
+	return func(e E) {
+		*received = e
+	}
 }

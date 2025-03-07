@@ -1,7 +1,6 @@
 package eventstore_test
 
 import (
-	"github.com/nbarbey/go-event-store/eventstore"
 	"os"
 	"testing"
 )
@@ -17,10 +16,4 @@ func TestMain(m *testing.M) {
 	defer postgresContainer.Cancel()
 
 	os.Exit(m.Run())
-}
-
-func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
-	return func(e E) {
-		*received = e
-	}
 }
