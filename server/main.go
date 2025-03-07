@@ -11,11 +11,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = es.Start(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	defer es.Stop()
 
 	server := handler.NewServerFromEventStore[any]("localhost:8080", es)
 	err = server.Start()

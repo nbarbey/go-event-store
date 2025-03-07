@@ -55,12 +55,3 @@ func (l *Listener[E]) SubscribeFromBeginning(ctx context.Context, consumer Consu
 	l.Subscribe(consumer)
 	return nil
 }
-
-func (l *Listener[E]) Start(ctx context.Context) error {
-
-	return nil
-}
-
-func (l *Listener[E]) Stop() {
-
-}

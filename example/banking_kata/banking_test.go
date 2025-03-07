@@ -34,8 +34,7 @@ func TestAccount_Deposit(t *testing.T) {
 	t.Run("deposit 1", func(t *testing.T) {
 		a := bank.NewAccount()
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		time.Sleep(10 * time.Millisecond)
 
 		a.Deposit(1)
 
@@ -45,8 +44,7 @@ func TestAccount_Deposit(t *testing.T) {
 	t.Run("deposit twice", func(t *testing.T) {
 		a := bank.NewAccount()
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		time.Sleep(10 * time.Millisecond)
 
 		a.Deposit(1)
 		a.Deposit(1)
@@ -57,8 +55,7 @@ func TestAccount_Deposit(t *testing.T) {
 	t.Run("deposit and withdraw", func(t *testing.T) {
 		a := bank.NewAccount()
 
-		startTestEventStore(t, es)
-		defer es.Stop()
+		time.Sleep(10 * time.Millisecond)
 
 		a.Deposit(1)
 		a.Withdraw(1)
@@ -104,10 +101,4 @@ func (c *testPostgresContainer) Port(t *testing.T) int {
 
 func (c *testPostgresContainer) ConnectionString(t *testing.T, options string) string {
 	return fmt.Sprintf("postgres://%s:%s@127.0.0.1:%d/events?%s", c.user, c.password, c.Port(t), options)
-}
-
-func startTestEventStore[E any](t *testing.T, es *eventstore.EventStore[E]) {
-	require.NoError(t, es.Start(context.Background()))
-	// give time for listener to be set-up properly
-	time.Sleep(10 * time.Millisecond)
 }

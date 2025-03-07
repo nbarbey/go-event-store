@@ -67,8 +67,8 @@ func TestEventStore(t *testing.T) {
 		var received string
 		stringEventStore.Subscribe(makeTestConsumer[string](&received))
 
-		startTestEventStore(t, stringEventStore)
-		defer stringEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
@@ -84,8 +84,8 @@ func TestEventStore(t *testing.T) {
 		var received string
 		require.NoError(t, stringEventStore.SubscribeFromBeginning(context.Background(), makeTestConsumer[string](&received)))
 
-		startTestEventStore(t, stringEventStore)
-		defer stringEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		assert.Eventually(t, func() bool {
 			return "my_event_data" == string(received)
@@ -97,8 +97,8 @@ func TestEventStore(t *testing.T) {
 		var receivedOther string
 		stringEventStore.GetStream("other-string-stream").Subscribe(makeTestConsumer[string](&receivedOther))
 
-		startTestEventStore(t, stringEventStore)
-		defer stringEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		_, err := stringEventStore.GetStream("some-string-stream").Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
@@ -119,8 +119,8 @@ func TestEventStore(t *testing.T) {
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, customEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		_, err := myStream.Publish(context.Background(), MyEvent{Name: "John"})
 		require.NoError(t, err)
@@ -133,8 +133,8 @@ func TestEventStore(t *testing.T) {
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, customEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		_, err := myStream.WithType("my_event").Publish(context.Background(), MyEvent{Name: "John"})
 		require.NoError(t, err)
@@ -148,8 +148,8 @@ func TestEventStore(t *testing.T) {
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, customEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		version, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
@@ -168,8 +168,8 @@ func TestEventStore(t *testing.T) {
 		myStream := customEventStore.GetStream("my-incredible-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, customEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		_, err := myStream.ExpectedVersion("").WithType("my_event_type").Publish(context.Background(), MyEvent{Name: "Felipe"})
 		require.NoError(t, err)
@@ -182,8 +182,8 @@ func TestEventStore(t *testing.T) {
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
 
-		startTestEventStore(t, customEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		version, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
 		require.NoError(t, err)
@@ -226,8 +226,8 @@ func TestEventStore(t *testing.T) {
 			}
 		}))
 
-		startTestEventStore(t, todoEventStore)
-		defer customEventStore.Stop()
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
 
 		christmas := time.Date(2025, 12, 24, 0, 0, 0, 0, time.UTC)
 		created := todoCreated{Date: christmas}
@@ -252,10 +252,4 @@ func makeTestConsumer[E any](received *E) eventstore.ConsumerFunc[E] {
 	return func(e E) {
 		*received = e
 	}
-}
-
-func startTestEventStore[E any](t *testing.T, es *eventstore.EventStore[E]) {
-	require.NoError(t, es.Start(context.Background()))
-	// give time for listener to be set-up properly
-	time.Sleep(10 * time.Millisecond)
 }

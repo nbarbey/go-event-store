@@ -55,7 +55,7 @@ func NewAccount(eventStore *eventstore.EventStore[AccountEvent]) *Account {
 	account := &Account{
 		accountId: id,
 		balance:   0,
-		stream:    eventStore.Stream(fmt.Sprintf("account-events-%s", id)),
+		stream:    eventStore.GetStream(fmt.Sprintf("account-events-%s", id)),
 	}
 	account.stream.Subscribe(
 		eventstore.ConsumerFunc[AccountEvent](
