@@ -213,6 +213,33 @@ func TestEventStore(t *testing.T) {
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Juan"} == received }, 10*time.Second, time.Millisecond)
 	})
 
+	t.Run("Version retrieve the version of the latest event", func(t *testing.T) {
+		var received MyEvent
+		myStream := customEventStore.GetStream("my-custom-event-stream")
+		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
+
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
+
+		_, err := myStream.ExpectedVersion("").Publish(context.Background(), MyEvent{Name: "Rose"})
+		require.NoError(t, err)
+
+		assert.Eventually(t, func() bool { return MyEvent{Name: "Rose"} == received }, 10*time.Second, time.Millisecond)
+		version1, err := myStream.Version(context.Background())
+		require.NoError(t, err)
+		assert.NotEmpty(t, version1)
+
+		_, err = myStream.ExpectedVersion(version1).Publish(context.Background(), MyEvent{Name: "Tiphaine"})
+		require.NoError(t, err)
+
+		assert.Eventually(t, func() bool { return MyEvent{Name: "Tiphaine"} == received }, 10*time.Second, time.Millisecond)
+		version2, err := myStream.Version(context.Background())
+		require.NoError(t, err)
+		assert.NotEmpty(t, version2)
+
+		assert.NotEqual(t, version1, version2)
+	})
+
 	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=todo_events"))
 	require.NoError(t, err)
 	codec := eventstore.NewJSONCodec[todoEvent]()

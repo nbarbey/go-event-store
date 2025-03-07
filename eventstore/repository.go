@@ -8,6 +8,7 @@ import (
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"time"
 )
 
 type Repository[E any] struct {
@@ -65,17 +66,18 @@ func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, type
 	}
 
 	_, err := r.connection.Exec(ctx,
-		"insert into events (event_id, stream_id, event_type, version, payload) values ($1, $2, $3, $4, $5)",
-		guid.New(), streamId, typeHint, version, data)
+		"insert into events (event_id, stream_id, event_type, version, payload, created_at) values ($1, $2, $3, $4, $5, $6)",
+		guid.New(), streamId, typeHint, version, data, time.Now())
 	return err
 }
 
 func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
 	_, err := r.connection.Exec(ctx,
-		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text)")
+		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text, created_at timestamp )")
 	if err != nil {
 		return err
 	}
+
 	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
 			declare 
@@ -94,7 +96,7 @@ func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
 }
 
 func (r *Repository[E]) Version(ctx context.Context) (version string, err error) {
-	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1", r.streamId)
+	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
 	err = row.Scan(&version)
 	return
 }
