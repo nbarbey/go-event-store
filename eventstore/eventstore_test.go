@@ -77,7 +77,22 @@ func TestEventStore(t *testing.T) {
 			return "my_event_data" == string(received)
 		}, time.Second, 10*time.Millisecond)
 	})
-	t.Run("subsribe from beginning", func(t *testing.T) {
+	t.Run("subscribe is cancellable", func(t *testing.T) {
+		var received string
+		subscription := stringEventStore.Subscribe(makeTestConsumer[string](&received))
+		defer subscription.Cancel()
+
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
+
+		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
+		require.NoError(t, err)
+
+		assert.Eventually(t, func() bool {
+			return "my_event_data" == string(received)
+		}, time.Second, 10*time.Millisecond)
+	})
+	t.Run("subscribe from beginning", func(t *testing.T) {
 		_, err := stringEventStore.Publish(context.Background(), "my_event_data")
 		require.NoError(t, err)
 
