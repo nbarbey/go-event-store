@@ -16,7 +16,7 @@ type Listener[E any] struct {
 	*Repository[E]
 }
 
-func NewListener[E any](streamId string, listener *pgxlisten.Listener, connection *pgxpool.Pool, codec codec.Codec[E]) *Listener[E] {
+func NewListener[E any](streamId string, listener *pgxlisten.Listener, connection *pgxpool.Pool, codec codec.TypedCodec[E]) *Listener[E] {
 	return &Listener[E]{
 		streamId:   streamId,
 		listener:   listener,

@@ -26,7 +26,7 @@ func (s Stream[E]) GetStream(name string) *Stream[E] {
 	return NewStream[E](name, s.Listener.Repository, s.Listener.listener)
 }
 
-func (s Stream[E]) WithCodec(codec codec.Codec[E]) *Stream[E] {
+func (s Stream[E]) WithCodec(codec codec.TypedCodec[E]) *Stream[E] {
 	return NewStream[E](s.Listener.streamId, s.Listener.Repository.WithCodec(codec), s.Listener.listener)
 }
 

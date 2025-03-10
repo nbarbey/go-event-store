@@ -15,14 +15,14 @@ import (
 type Repository[E any] struct {
 	streamId   string
 	connection *pgxpool.Pool
-	codec      codec.Codec[E]
+	codec      codec.TypedCodec[E]
 }
 
-func NewRepository[E any](connection *pgxpool.Pool, c codec.Codec[E]) *Repository[E] {
+func NewRepository[E any](connection *pgxpool.Pool, c codec.TypedCodec[E]) *Repository[E] {
 	return &Repository[E]{connection: connection, codec: c}
 }
 
-func (r *Repository[E]) WithCodec(codec codec.Codec[E]) *Repository[E] {
+func (r *Repository[E]) WithCodec(codec codec.TypedCodec[E]) *Repository[E] {
 	r.codec = codec
 	return r
 }
