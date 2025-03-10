@@ -3,6 +3,7 @@ package handler_test
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/eventstore/httpclient"
 	"github.com/nbarbey/go-event-store/server/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,7 @@ func TestServerPublish(t *testing.T) {
 
 	testServer := httptest.NewServer(server)
 	testHTTPClient := testServer.Client()
-	client := eventstore.NewClient[TypicalEvent](testHTTPClient)
+	client := httpclient.NewClient[TypicalEvent](testHTTPClient)
 	client.SetBaseURL(testServer.URL)
 
 	t.Run("publish and get all", func(t *testing.T) {
