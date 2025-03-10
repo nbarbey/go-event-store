@@ -1,4 +1,4 @@
-package eventstore
+package codec
 
 type NoopCodec[E string | []byte] struct {
 }

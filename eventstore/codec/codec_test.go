@@ -1,4 +1,4 @@
-package eventstore
+package codec
 
 import (
 	"github.com/stretchr/testify/assert"

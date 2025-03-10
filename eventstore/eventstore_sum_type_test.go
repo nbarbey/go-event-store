@@ -3,6 +3,7 @@ package eventstore_test
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -31,17 +32,17 @@ func (c todoDeleted) isTodoEvent() {}
 func TestEventStore_with_sum_type(t *testing.T) {
 	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=todo_events"))
 	require.NoError(t, err)
-	codec := eventstore.NewJSONCodec[todoEvent]()
-	codec.RegisterType("todoCreated", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
-		return eventstore.BuildJSONUnmarshalFunc[todoCreated]()(payload)
+	typedCodec := codec.NewJSONCodec[todoEvent]()
+	typedCodec.RegisterType("todoCreated", codec.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return codec.BuildJSONUnmarshalFunc[todoCreated]()(payload)
 	}))
-	codec.RegisterType("todoDone", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
-		return eventstore.BuildJSONUnmarshalFunc[todoDone]()(payload)
+	typedCodec.RegisterType("todoDone", codec.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return codec.BuildJSONUnmarshalFunc[todoDone]()(payload)
 	}))
-	codec.RegisterType("todoDeleted", eventstore.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
-		return eventstore.BuildJSONUnmarshalFunc[todoDeleted]()(payload)
+	typedCodec.RegisterType("todoDeleted", codec.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
+		return codec.BuildJSONUnmarshalFunc[todoDeleted]()(payload)
 	}))
-	todoEventStore.WithCodec(codec)
+	todoEventStore.WithCodec(typedCodec)
 
 	t.Run("publish multiple events with different types on same stream", func(t *testing.T) {
 		var createdReceived todoCreated

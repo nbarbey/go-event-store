@@ -1,4 +1,4 @@
-package eventstore
+package codec
 
 type Marshaller[E any] interface {
 	Marshall(event E) ([]byte, error)

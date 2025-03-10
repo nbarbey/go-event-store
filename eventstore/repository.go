@@ -8,20 +8,21 @@ import (
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	codec2 "github.com/nbarbey/go-event-store/eventstore/codec"
 	"time"
 )
 
 type Repository[E any] struct {
 	streamId   string
 	connection *pgxpool.Pool
-	codec      Codec[E]
+	codec      codec2.Codec[E]
 }
 
-func NewRepository[E any](connection *pgxpool.Pool, codec Codec[E]) *Repository[E] {
+func NewRepository[E any](connection *pgxpool.Pool, codec codec2.Codec[E]) *Repository[E] {
 	return &Repository[E]{connection: connection, codec: codec}
 }
 
-func (r *Repository[E]) WithCodec(codec Codec[E]) *Repository[E] {
+func (r *Repository[E]) WithCodec(codec codec2.Codec[E]) *Repository[E] {
 	r.codec = codec
 	return r
 }
@@ -50,7 +51,7 @@ func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
 	ers := eventRows(sliceOfEventRows)
-	return UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
+	return codec2.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
 func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte, expectedVersion string) error {

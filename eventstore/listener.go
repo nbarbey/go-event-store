@@ -6,6 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
 type Listener[E any] struct {
@@ -15,7 +16,7 @@ type Listener[E any] struct {
 	*Repository[E]
 }
 
-func NewListener[E any](streamId string, listener *pgxlisten.Listener, connection *pgxpool.Pool, codec Codec[E]) *Listener[E] {
+func NewListener[E any](streamId string, listener *pgxlisten.Listener, connection *pgxpool.Pool, codec codec.Codec[E]) *Listener[E] {
 	return &Listener[E]{
 		streamId:   streamId,
 		listener:   listener,

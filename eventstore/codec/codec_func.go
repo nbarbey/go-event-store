@@ -1,4 +1,4 @@
-package eventstore
+package codec
 
 type UnmarshalerFunc[E any] func(payload []byte) (event E, err error)
 

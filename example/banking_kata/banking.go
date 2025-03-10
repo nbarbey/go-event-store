@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/beevik/guid"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
 type Bank struct {
@@ -12,14 +13,14 @@ type Bank struct {
 }
 
 func NewBank(es *eventstore.EventStore[AccountEvent]) *Bank {
-	codec := eventstore.NewJSONCodec[AccountEvent]()
-	codec.RegisterType("DepositEvent", eventstore.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
-		return eventstore.BuildJSONUnmarshalFunc[DepositEvent]()(payload)
+	typedCodec := codec.NewJSONCodec[AccountEvent]()
+	typedCodec.RegisterType("DepositEvent", codec.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
+		return codec.BuildJSONUnmarshalFunc[DepositEvent]()(payload)
 	}))
-	codec.RegisterType("WithdrawEvent", eventstore.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
-		return eventstore.BuildJSONUnmarshalFunc[WithdrawEvent]()(payload)
+	typedCodec.RegisterType("WithdrawEvent", codec.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
+		return codec.BuildJSONUnmarshalFunc[WithdrawEvent]()(payload)
 	}))
-	es.WithCodec(codec)
+	es.WithCodec(typedCodec)
 	return &Bank{eventStore: es}
 }
 

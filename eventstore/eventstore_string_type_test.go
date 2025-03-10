@@ -3,6 +3,7 @@ package eventstore_test
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -16,7 +17,7 @@ func TestEventStore_with_string_type(t *testing.T) {
 	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString(t, "search_path=string_events"))
 	require.NoError(t, err)
 
-	stringEventStore.WithCodec(eventstore.NoopCodec{})
+	stringEventStore.WithCodec(codec.NoopCodec[string]{})
 
 	t.Run("publish and get all", func(t *testing.T) {
 		err := stringEventStore.Publish(context.Background(), "my_event_data")
