@@ -21,27 +21,11 @@ func (JSONCodec[E]) Unmarshall(payload []byte) (event E, err error) {
 
 type JSONCodecWithTypeHints[E any] struct {
 	JSONCodec[E]
-	unmarshalers map[string]Unmarshaller[E]
+	*UnmarshalerWithTypeHint[E]
 }
 
 func NewJSONCodecWithTypeHints[E any](unmarshalers map[string]Unmarshaller[E]) *JSONCodecWithTypeHints[E] {
-	if unmarshalers == nil {
-		unmarshalers = make(map[string]Unmarshaller[E])
-	}
-	return &JSONCodecWithTypeHints[E]{unmarshalers: unmarshalers}
-}
-
-func (j JSONCodecWithTypeHints[E]) UnmarshallWithType(typeHint string, payload []byte) (event E, err error) {
-	u, ok := j.unmarshalers[typeHint]
-	if ok {
-		return u.Unmarshall(payload)
-	}
-	err = json.Unmarshal(payload, &event)
-	return
-}
-
-func (j JSONCodecWithTypeHints[E]) RegisterType(s string, u Unmarshaller[E]) {
-	j.unmarshalers[s] = u
+	return &JSONCodecWithTypeHints[E]{UnmarshalerWithTypeHint: NewUnmarshalerWithTypeHints[E](JSONCodec[E]{}, unmarshalers)}
 }
 
 func BuildJSONUnmarshalFunc[E any]() UnmarshalerFunc[E] {
