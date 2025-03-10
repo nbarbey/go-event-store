@@ -44,13 +44,14 @@ func TestJSONCodec_Marshall_Unmarshall(t *testing.T) {
 }
 
 func TestJSONCodec_Marshall_UnmarshallWithType(t *testing.T) {
-	c := NewJSONCodec[carEvent]()
-	c.RegisterType("carSold", UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
-		return BuildJSONUnmarshalFunc[carSold]()(payload)
-	}))
-	c.RegisterType("carRepaired", UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
-		return BuildJSONUnmarshalFunc[carRepaired]()(payload)
-	}))
+	c := NewJSONCodecWithTypeHints[carEvent](map[string]Unmarshaller[carEvent]{
+		"carSold": UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
+			return BuildJSONUnmarshalFunc[carSold]()(payload)
+		}),
+		"carRepaired": UnmarshalerFunc[carEvent](func(payload []byte) (event carEvent, err error) {
+			return BuildJSONUnmarshalFunc[carRepaired]()(payload)
+		}),
+	})
 
 	payload, err := c.Marshall(soldAMercedesForChristmas)
 	require.NoError(t, err)
