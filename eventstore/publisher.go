@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/beevik/guid"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
 type Publisher[E any] struct {
@@ -15,10 +13,10 @@ type Publisher[E any] struct {
 	*Repository[E]
 }
 
-func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec codec.TypedCodec[E]) *Publisher[E] {
+func NewPublisher[E any](streamId string, repository *Repository[E]) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:   streamId,
-		Repository: NewRepository[E](connection, codec).Stream(streamId),
+		Repository: NewRepository[E](repository.connection, repository.codec).Stream(streamId),
 	}
 }
 

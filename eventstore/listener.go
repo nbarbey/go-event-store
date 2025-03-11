@@ -2,8 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
 type Listener[E any] struct {
@@ -12,10 +10,10 @@ type Listener[E any] struct {
 	*Repository[E]
 }
 
-func NewListener[E any](streamId string, connection *pgxpool.Pool, codec codec.TypedCodec[E]) *Listener[E] {
+func NewListener[E any](streamId string, repository *Repository[E]) *Listener[E] {
 	return &Listener[E]{
 		streamId:   streamId,
-		Repository: NewRepository[E](connection, codec).Stream(streamId),
+		Repository: NewRepository[E](repository.connection, repository.codec).Stream(streamId),
 	}
 }
 

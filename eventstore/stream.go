@@ -12,8 +12,8 @@ type Stream[E any] struct {
 
 func NewStream[E any](name string, repo *Repository[E]) *Stream[E] {
 	return &Stream[E]{
-		Listener:  NewListener[E](name, repo.connection, repo.codec),
-		Publisher: NewPublisher[E](name, repo.connection, repo.codec),
+		Listener:  NewListener[E](name, repo),
+		Publisher: NewPublisher[E](name, repo),
 	}
 }
 
