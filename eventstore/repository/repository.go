@@ -51,6 +51,25 @@ func (r *Repository) InsertPayload(ctx context.Context, version string, typeHint
 	return err
 }
 
+func (r *Repository) Version(ctx context.Context) (version string, err error) {
+	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
+	err = row.Scan(&version)
+	return
+}
+
+func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, [][]byte, error) {
+	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
+	if err != nil {
+		return nil, nil, err
+	}
+	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
+	if err != nil {
+		return nil, nil, fmt.Errorf("CollectRows error: %w", err)
+	}
+	ers := eventRows(sliceOfEventRows)
+	return ers.types(), ers.payloads(), nil
+}
+
 func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
 	err := r.createEventsTable(ctx)
 	if err != nil {
@@ -76,12 +95,6 @@ func (r *Repository) createNewEventNotificationTrigger(ctx context.Context, err 
 	return err
 }
 
-func (r *Repository) Version(ctx context.Context) (version string, err error) {
-	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
-	err = row.Scan(&version)
-	return
-}
-
 func (r *Repository) createNotificationFunction(ctx context.Context, err error) error {
 	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
@@ -92,17 +105,4 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
 		end;
 		$$ language plpgsql;`)
 	return err
-}
-
-func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, [][]byte, error) {
-	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
-	if err != nil {
-		return nil, nil, err
-	}
-	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
-	if err != nil {
-		return nil, nil, fmt.Errorf("CollectRows error: %w", err)
-	}
-	ers := eventRows(sliceOfEventRows)
-	return ers.types(), ers.payloads(), nil
 }
