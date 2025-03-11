@@ -55,11 +55,7 @@ func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Liste
 	listener := NewListener(r.streamId, r.connection)
 
 	listener.Handle(func(ctx context.Context, eventId string) error {
-		payload, typeHint, err := r.GetPayload(ctx, eventId)
-		if err != nil {
-			return err
-		}
-		event, err := r.codec.UnmarshallWithType(typeHint, payload)
+		event, err := r.GetEvent(ctx, eventId)
 		if err != nil {
 			return err
 		}
