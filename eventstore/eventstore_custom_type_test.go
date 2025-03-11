@@ -45,7 +45,7 @@ func TestEventStore_with_custom_events(t *testing.T) {
 		assert.Eventually(t, func() bool { return expected == received }, time.Second, time.Millisecond)
 	})
 
-	t.Run("publish with expected version and reject if not expected", func(t *testing.T) {
+	t.Run("publish with expected Version and reject if not expected", func(t *testing.T) {
 		var received MyEvent
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
@@ -64,7 +64,7 @@ func TestEventStore_with_custom_events(t *testing.T) {
 
 	})
 
-	t.Run("publish with type and expected version", func(t *testing.T) {
+	t.Run("publish with type and expected Version", func(t *testing.T) {
 		var received MyEvent
 		myStream := customEventStore.GetStream("my-incredible-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
@@ -78,7 +78,7 @@ func TestEventStore_with_custom_events(t *testing.T) {
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Felipe"} == received }, time.Second, time.Millisecond)
 	})
 
-	t.Run("publish with expected version and accept if expected matches actual version", func(t *testing.T) {
+	t.Run("publish with expected Version and accept if expected matches actual Version", func(t *testing.T) {
 		var received MyEvent
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))
@@ -99,7 +99,7 @@ func TestEventStore_with_custom_events(t *testing.T) {
 		assert.Eventually(t, func() bool { return MyEvent{Name: "Juan"} == received }, 10*time.Second, time.Millisecond)
 	})
 
-	t.Run("Version retrieve the version of the latest event", func(t *testing.T) {
+	t.Run("Version retrieve the Version of the latest event", func(t *testing.T) {
 		var received MyEvent
 		myStream := customEventStore.GetStream("my-custom-event-stream")
 		myStream.Subscribe(makeTestConsumer[MyEvent](&received))

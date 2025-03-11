@@ -19,16 +19,16 @@ func NewRepository(connection *pgxpool.Pool) *Repository {
 	return &Repository{connection: connection}
 }
 
-func (r *Repository) GetPayload(ctx context.Context, eventId string) ([]byte, string, error) {
-	row := r.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
+func (r *Repository) GetPayload(ctx context.Context, eventId string) ([]byte, string, string, error) {
+	row := r.connection.QueryRow(ctx, "select event_type, version, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
-	err := row.Scan(&er.EventType, &er.Payload)
+	err := row.Scan(&er.EventType, &er.Version, &er.Payload)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	payload := er.Payload
 	typeHint := er.EventType.String
-	return payload, typeHint, nil
+	return payload, typeHint, er.Version.String, nil
 }
 
 var ErrVersionMismatch = errors.New("mismatched version")

@@ -27,12 +27,21 @@ func (r *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
 	return &TypedRepository[E]{Repository: repository, codec: r.codec}
 }
 
+type VersionSetter interface {
+	SetVersion(version string)
+}
+
 func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
-	payload, typeHint, err := r.GetPayload(ctx, eventId)
+	payload, typeHint, version, err := r.GetPayload(ctx, eventId)
 	if err != nil {
 		return event, err
 	}
-	return r.codec.UnmarshallWithType(typeHint, payload)
+	event, err = r.codec.UnmarshallWithType(typeHint, payload)
+	versioned, ok := any(&event).(VersionSetter)
+	if ok {
+		versioned.SetVersion(version)
+	}
+	return event, err
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
