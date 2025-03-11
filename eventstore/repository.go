@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
+	"github.com/nbarbey/go-event-store/eventstore/consumer"
 	"time"
 )
 
@@ -121,7 +122,7 @@ func (r *Repository[E]) Version(ctx context.Context) (version string, err error)
 	return
 }
 
-func (r *Repository[E]) BuildListener(consumer Consumer[E]) *pgxlisten.Listener {
+func (r *Repository[E]) BuildListener(consumer consumer.Consumer[E]) *pgxlisten.Listener {
 	listener := &pgxlisten.Listener{}
 	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
 		conn, err := r.connection.Acquire(ctx)

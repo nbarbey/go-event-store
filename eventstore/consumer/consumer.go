@@ -1,4 +1,4 @@
-package eventstore
+package consumer
 
 type ConsumerFunc[E any] func(e E)
 

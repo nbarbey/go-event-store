@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
+	"github.com/nbarbey/go-event-store/eventstore/consumer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -49,7 +50,7 @@ func TestEventStore_with_sum_type(t *testing.T) {
 		var doneReceived todoDone
 		var deletedReceived todoDeleted
 		s := todoEventStore.GetStream("todo-list-1")
-		s.Subscribe(eventstore.ConsumerFunc[todoEvent](func(e todoEvent) {
+		s.Subscribe(consumer.ConsumerFunc[todoEvent](func(e todoEvent) {
 			switch e.(type) {
 			case todoCreated:
 				createdReceived = e.(todoCreated)

@@ -2,6 +2,7 @@ package eventstore
 
 import (
 	"context"
+	"github.com/nbarbey/go-event-store/eventstore/consumer"
 )
 
 type Listener[E any] struct {
@@ -19,7 +20,7 @@ type Subscription struct {
 	cancel func()
 }
 
-func (l *Listener[E]) Subscribe(consumer Consumer[E]) (subscription *Subscription) {
+func (l *Listener[E]) Subscribe(consumer consumer.Consumer[E]) (subscription *Subscription) {
 	listener := l.BuildListener(consumer)
 
 	subscription = &Subscription{}
@@ -33,7 +34,7 @@ func (s Subscription) Cancel() {
 	s.cancel()
 }
 
-func (l *Listener[E]) SubscribeFromBeginning(ctx context.Context, consumer Consumer[E]) (err error) {
+func (l *Listener[E]) SubscribeFromBeginning(ctx context.Context, consumer consumer.Consumer[E]) (err error) {
 	events, err := l.All(ctx)
 	if err != nil {
 		return err

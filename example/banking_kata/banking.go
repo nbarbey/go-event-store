@@ -6,6 +6,7 @@ import (
 	"github.com/beevik/guid"
 	"github.com/nbarbey/go-event-store/eventstore"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
+	"github.com/nbarbey/go-event-store/eventstore/consumer"
 )
 
 type Bank struct {
@@ -59,7 +60,7 @@ func NewAccount(eventStore *eventstore.EventStore[AccountEvent]) *Account {
 		stream:    eventStore.GetStream(fmt.Sprintf("account-events-%s", id)),
 	}
 	account.stream.Subscribe(
-		eventstore.ConsumerFunc[AccountEvent](
+		consumer.ConsumerFunc[AccountEvent](
 			func(e AccountEvent) {
 				switch e.(type) {
 				case DepositEvent:
