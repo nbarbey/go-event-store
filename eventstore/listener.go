@@ -5,14 +5,12 @@ import (
 )
 
 type Listener[E any] struct {
-	streamId   string
 	cancelFunc context.CancelFunc
 	*Repository[E]
 }
 
 func NewListener[E any](streamId string, repository *Repository[E]) *Listener[E] {
 	return &Listener[E]{
-		streamId:   streamId,
 		Repository: NewRepository[E](repository.connection, repository.codec).Stream(streamId),
 	}
 }
