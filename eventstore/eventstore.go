@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
@@ -21,7 +20,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	repository := NewRepository[E](pool, codec.NewJSONCodecWithTypeHints[E](nil))
 	err = repository.CreateTableAndTrigger(ctx)
 	return &EventStore[E]{
-		Stream: NewStream[E]("default-stream", repository, &pgxlisten.Listener{}),
+		Stream: NewStream[E]("default-stream", repository),
 	}, err
 }
 

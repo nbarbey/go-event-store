@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
@@ -11,9 +10,9 @@ type Stream[E any] struct {
 	*Publisher[E]
 }
 
-func NewStream[E any](name string, repo *Repository[E], listener *pgxlisten.Listener) *Stream[E] {
+func NewStream[E any](name string, repo *Repository[E]) *Stream[E] {
 	return &Stream[E]{
-		Listener:  NewListener[E](name, listener, repo.connection, repo.codec),
+		Listener:  NewListener[E](name, repo.connection, repo.codec),
 		Publisher: NewPublisher[E](name, repo.connection, repo.codec),
 	}
 }
@@ -23,11 +22,11 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 }
 
 func (s Stream[E]) GetStream(name string) *Stream[E] {
-	return NewStream[E](name, s.Listener.Repository, s.Listener.listener)
+	return NewStream[E](name, s.Listener.Repository)
 }
 
 func (s Stream[E]) WithCodec(codec codec.TypedCodec[E]) *Stream[E] {
-	return NewStream[E](s.Listener.streamId, s.Listener.Repository.WithCodec(codec), s.Listener.listener)
+	return NewStream[E](s.Listener.streamId, s.Listener.Repository.WithCodec(codec))
 }
 
 func (s Stream[E]) Version(ctx context.Context) (string, error) {
