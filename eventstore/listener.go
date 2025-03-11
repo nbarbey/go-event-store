@@ -2,8 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
@@ -29,21 +27,7 @@ type Subscription struct {
 }
 
 func (l *Listener[E]) Subscribe(consumer Consumer[E]) (subscription *Subscription) {
-	listener := &pgxlisten.Listener{}
-	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
-		conn, err := l.connection.Acquire(ctx)
-		return conn.Conn(), err
-	}
-
-	listener.Handle(l.streamId, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		event, err := l.GetEvent(ctx, notification.Payload)
-		if err != nil {
-			return err
-		}
-
-		consumer.Consume(event)
-		return nil
-	}))
+	listener := l.BuildListener(consumer)
 
 	subscription = &Subscription{}
 	var ctx context.Context

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"time"
 )
@@ -117,6 +119,25 @@ func (r *Repository[E]) Version(ctx context.Context) (version string, err error)
 	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
 	err = row.Scan(&version)
 	return
+}
+
+func (r *Repository[E]) BuildListener(consumer Consumer[E]) *pgxlisten.Listener {
+	listener := &pgxlisten.Listener{}
+	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
+		conn, err := r.connection.Acquire(ctx)
+		return conn.Conn(), err
+	}
+
+	listener.Handle(r.streamId, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
+		event, err := r.GetEvent(ctx, notification.Payload)
+		if err != nil {
+			return err
+		}
+
+		consumer.Consume(event)
+		return nil
+	}))
+	return listener
 }
 
 type eventRow struct {
