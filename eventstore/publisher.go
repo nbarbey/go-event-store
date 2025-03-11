@@ -3,17 +3,18 @@ package eventstore
 import (
 	"context"
 	"github.com/beevik/guid"
+	"github.com/nbarbey/go-event-store/eventstore/repository"
 )
 
 type Publisher[E any] struct {
 	typeHint        string
 	expectedVersion string
-	*Repository[E]
+	*repository.Repository[E]
 }
 
-func NewPublisher[E any](streamId string, repository *Repository[E]) *Publisher[E] {
+func NewPublisher[E any](streamId string, r *repository.Repository[E]) *Publisher[E] {
 	return &Publisher[E]{
-		Repository: NewRepository[E](repository.connection, repository.codec).Stream(streamId),
+		Repository: r.Stream(streamId),
 	}
 }
 

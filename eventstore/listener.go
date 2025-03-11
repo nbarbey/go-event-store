@@ -3,16 +3,17 @@ package eventstore
 import (
 	"context"
 	"github.com/nbarbey/go-event-store/eventstore/consumer"
+	"github.com/nbarbey/go-event-store/eventstore/repository"
 )
 
 type Listener[E any] struct {
 	cancelFunc context.CancelFunc
-	*Repository[E]
+	*repository.Repository[E]
 }
 
-func NewListener[E any](streamId string, repository *Repository[E]) *Listener[E] {
+func NewListener[E any](streamId string, r *repository.Repository[E]) *Listener[E] {
 	return &Listener[E]{
-		Repository: NewRepository[E](repository.connection, repository.codec).Stream(streamId),
+		Repository: r.Stream(streamId),
 	}
 }
 
