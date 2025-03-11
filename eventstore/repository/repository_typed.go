@@ -2,10 +2,7 @@ package repository
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgxlisten"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/nbarbey/go-event-store/eventstore/consumer"
 )
@@ -54,21 +51,21 @@ func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint 
 	return r.insertPayload(ctx, version, typeHint, expectedVersion, data)
 }
 
-func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *pgxlisten.Listener {
-	listener := &pgxlisten.Listener{}
-	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
-		conn, err := r.connection.Acquire(ctx)
-		return conn.Conn(), err
-	}
+func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {
+	listener := NewListener(r.streamId, r.connection)
 
-	listener.Handle(r.streamId, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		event, err := r.GetEvent(ctx, notification.Payload)
+	listener.Handle(func(ctx context.Context, eventId string) error {
+		payload, typeHint, err := r.getPayload(ctx, eventId)
+		if err != nil {
+			return err
+		}
+		event, err := r.codec.UnmarshallWithType(typeHint, payload)
 		if err != nil {
 			return err
 		}
 
 		consumer.Consume(event)
 		return nil
-	}))
+	})
 	return listener
 }
