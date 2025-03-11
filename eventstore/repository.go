@@ -57,6 +57,8 @@ func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 	return codec.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
+var ErrVersionMismatch = errors.New("mismatched version")
+
 func (r *Repository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
 	data, err := r.codec.Marshall(event)
 	if err != nil {

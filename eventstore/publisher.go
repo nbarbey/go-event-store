@@ -2,7 +2,6 @@ package eventstore
 
 import (
 	"context"
-	"errors"
 	"github.com/beevik/guid"
 )
 
@@ -33,8 +32,6 @@ func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
 		Repository:      p.Repository,
 	}
 }
-
-var ErrVersionMismatch = errors.New("mismatched version")
 
 func (p *Publisher[E]) Publish(ctx context.Context, event E) (err error) {
 	err = p.InsertEvent(ctx, guid.New().String(), p.typeHint, event, p.expectedVersion)
