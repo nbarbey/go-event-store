@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,15 +39,10 @@ func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (even
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
+	ers, err := r.allRows(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
-	if err != nil {
-		return nil, fmt.Errorf("CollectRows error: %w", err)
-	}
-	ers := eventRows(sliceOfEventRows)
 	return codec.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 

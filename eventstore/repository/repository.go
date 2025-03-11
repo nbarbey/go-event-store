@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/beevik/guid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -91,4 +92,17 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
 		end;
 		$$ language plpgsql;`)
 	return err
+}
+
+func (r *Repository) allRows(ctx context.Context) (eventRows, error) {
+	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
+	if err != nil {
+		return nil, err
+	}
+	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
+	if err != nil {
+		return nil, fmt.Errorf("CollectRows error: %w", err)
+	}
+	ers := eventRows(sliceOfEventRows)
+	return ers, nil
 }
