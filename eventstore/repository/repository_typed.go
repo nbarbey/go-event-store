@@ -28,7 +28,7 @@ func (r *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
 }
 
 func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
-	payload, typeHint, err := r.getPayload(ctx, eventId)
+	payload, typeHint, err := r.GetPayload(ctx, eventId)
 	if err != nil {
 		return event, err
 	}
@@ -36,7 +36,7 @@ func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (even
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	ers, err := r.allRows(ctx)
+	ers, err := r.AllRows(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,14 +48,14 @@ func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint 
 	if err != nil {
 		return err
 	}
-	return r.insertPayload(ctx, version, typeHint, expectedVersion, data)
+	return r.InsertPayload(ctx, version, typeHint, expectedVersion, data)
 }
 
 func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {
 	listener := NewListener(r.streamId, r.connection)
 
 	listener.Handle(func(ctx context.Context, eventId string) error {
-		payload, typeHint, err := r.getPayload(ctx, eventId)
+		payload, typeHint, err := r.GetPayload(ctx, eventId)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ func NewRepository(connection *pgxpool.Pool) *Repository {
 	return &Repository{connection: connection}
 }
 
-func (r *Repository) getPayload(ctx context.Context, eventId string) ([]byte, string, error) {
+func (r *Repository) GetPayload(ctx context.Context, eventId string) ([]byte, string, error) {
 	row := r.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err := row.Scan(&er.EventType, &er.Payload)
@@ -33,7 +33,7 @@ func (r *Repository) getPayload(ctx context.Context, eventId string) ([]byte, st
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
-func (r *Repository) insertPayload(ctx context.Context, version string, typeHint string, expectedVersion string, data []byte) error {
+func (r *Repository) InsertPayload(ctx context.Context, version string, typeHint string, expectedVersion string, data []byte) error {
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
@@ -94,7 +94,7 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
 	return err
 }
 
-func (r *Repository) allRows(ctx context.Context) (eventRows, error) {
+func (r *Repository) AllRows(ctx context.Context) (eventRows, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
 		return nil, err
