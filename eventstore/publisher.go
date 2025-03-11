@@ -9,12 +9,12 @@ import (
 type Publisher[E any] struct {
 	typeHint        string
 	expectedVersion string
-	*repository.Repository[E]
+	*repository.TypedRepository[E]
 }
 
-func NewPublisher[E any](streamId string, r *repository.Repository[E]) *Publisher[E] {
+func NewPublisher[E any](streamId string, r *repository.TypedRepository[E]) *Publisher[E] {
 	return &Publisher[E]{
-		Repository: r.Stream(streamId),
+		TypedRepository: r.Stream(streamId),
 	}
 }
 
@@ -22,7 +22,7 @@ func (p *Publisher[E]) WithType(typeHint string) *Publisher[E] {
 	return &Publisher[E]{
 		expectedVersion: p.expectedVersion,
 		typeHint:        typeHint,
-		Repository:      p.Repository,
+		TypedRepository: p.TypedRepository,
 	}
 }
 
@@ -30,7 +30,7 @@ func (p *Publisher[E]) ExpectedVersion(version string) *Publisher[E] {
 	return &Publisher[E]{
 		expectedVersion: version,
 		typeHint:        p.typeHint,
-		Repository:      p.Repository,
+		TypedRepository: p.TypedRepository,
 	}
 }
 

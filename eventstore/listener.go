@@ -8,12 +8,12 @@ import (
 
 type Listener[E any] struct {
 	cancelFunc context.CancelFunc
-	*repository.Repository[E]
+	*repository.TypedRepository[E]
 }
 
-func NewListener[E any](streamId string, r *repository.Repository[E]) *Listener[E] {
+func NewListener[E any](streamId string, r *repository.TypedRepository[E]) *Listener[E] {
 	return &Listener[E]{
-		Repository: r.Stream(streamId),
+		TypedRepository: r.Stream(streamId),
 	}
 }
 

@@ -12,7 +12,7 @@ type Stream[E any] struct {
 	*Publisher[E]
 }
 
-func NewStream[E any](name string, repo *repository.Repository[E]) *Stream[E] {
+func NewStream[E any](name string, repo *repository.TypedRepository[E]) *Stream[E] {
 	return &Stream[E]{
 		name:      name,
 		Listener:  NewListener[E](name, repo),
@@ -25,13 +25,13 @@ func (s Stream[E]) All(ctx context.Context) ([]E, error) {
 }
 
 func (s Stream[E]) GetStream(name string) *Stream[E] {
-	return NewStream[E](name, s.Listener.Repository)
+	return NewStream[E](name, s.Listener.TypedRepository)
 }
 
 func (s Stream[E]) WithCodec(codec codec.TypedCodec[E]) *Stream[E] {
-	return NewStream[E](s.name, s.Listener.Repository.WithCodec(codec))
+	return NewStream[E](s.name, s.Listener.TypedRepository.WithCodec(codec))
 }
 
 func (s Stream[E]) Version(ctx context.Context) (string, error) {
-	return s.Listener.Repository.Version(ctx)
+	return s.Listener.TypedRepository.Version(ctx)
 }

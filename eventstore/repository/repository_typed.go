@@ -15,26 +15,26 @@ import (
 	"time"
 )
 
-type Repository[E any] struct {
+type TypedRepository[E any] struct {
 	streamId   string
 	connection *pgxpool.Pool
 	codec      codec.TypedCodec[E]
 }
 
-func NewRepository[E any](connection *pgxpool.Pool, c codec.TypedCodec[E]) *Repository[E] {
-	return &Repository[E]{connection: connection, codec: c}
+func NewTypedRepository[E any](connection *pgxpool.Pool, c codec.TypedCodec[E]) *TypedRepository[E] {
+	return &TypedRepository[E]{connection: connection, codec: c}
 }
 
-func (r *Repository[E]) WithCodec(codec codec.TypedCodec[E]) *Repository[E] {
+func (r *TypedRepository[E]) WithCodec(codec codec.TypedCodec[E]) *TypedRepository[E] {
 	r.codec = codec
 	return r
 }
 
-func (r *Repository[E]) Stream(name string) *Repository[E] {
-	return &Repository[E]{connection: r.connection, codec: r.codec, streamId: name}
+func (r *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
+	return &TypedRepository[E]{connection: r.connection, codec: r.codec, streamId: name}
 }
 
-func (r *Repository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
+func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
 	row := r.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err = row.Scan(&er.EventType, &er.Payload)
@@ -44,7 +44,7 @@ func (r *Repository[E]) GetEvent(ctx context.Context, eventId string) (event E, 
 	return r.codec.UnmarshallWithType(er.EventType.String, er.Payload)
 }
 
-func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
+func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
-func (r *Repository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
+func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
 	data, err := r.codec.Marshall(event)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (r *Repository[E]) InsertEvent(ctx context.Context, version, typeHint strin
 	return err
 }
 
-func (r *Repository[E]) CreateTableAndTrigger(ctx context.Context) error {
+func (r *TypedRepository[E]) CreateTableAndTrigger(ctx context.Context) error {
 	err := r.createEventsTable(ctx)
 	if err != nil {
 		return err
@@ -93,20 +93,20 @@ func (r *Repository[E]) CreateTableAndTrigger(ctx context.Context) error {
 	return r.createNewEventNotificationTrigger(ctx, err)
 }
 
-func (r *Repository[E]) createEventsTable(ctx context.Context) error {
+func (r *TypedRepository[E]) createEventsTable(ctx context.Context) error {
 	_, err := r.connection.Exec(ctx,
 		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text, created_at timestamp )")
 	return err
 }
 
-func (r *Repository[E]) createNewEventNotificationTrigger(ctx context.Context, err error) error {
+func (r *TypedRepository[E]) createNewEventNotificationTrigger(ctx context.Context, err error) error {
 	_, err = r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
 								after insert on events
 								for each row execute procedure "doNotify"()`)
 	return err
 }
 
-func (r *Repository[E]) createNotificationFunction(ctx context.Context, err error) error {
+func (r *TypedRepository[E]) createNotificationFunction(ctx context.Context, err error) error {
 	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
 			declare 
@@ -118,13 +118,13 @@ func (r *Repository[E]) createNotificationFunction(ctx context.Context, err erro
 	return err
 }
 
-func (r *Repository[E]) Version(ctx context.Context) (version string, err error) {
+func (r *TypedRepository[E]) Version(ctx context.Context) (version string, err error) {
 	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
 	err = row.Scan(&version)
 	return
 }
 
-func (r *Repository[E]) BuildListener(consumer consumer.Consumer[E]) *pgxlisten.Listener {
+func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *pgxlisten.Listener {
 	listener := &pgxlisten.Listener{}
 	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
 		conn, err := r.connection.Acquire(ctx)
