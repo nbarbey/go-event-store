@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"github.com/beevik/guid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 )
 
 type Publisher[E any] struct {
@@ -13,10 +15,10 @@ type Publisher[E any] struct {
 	*Repository[E]
 }
 
-func NewPublisher[E any](streamId string, repo *Repository[E]) *Publisher[E] {
+func NewPublisher[E any](streamId string, connection *pgxpool.Pool, codec codec.TypedCodec[E]) *Publisher[E] {
 	return &Publisher[E]{
 		streamId:   streamId,
-		Repository: repo,
+		Repository: NewRepository[E](connection, codec).Stream(streamId),
 	}
 }
 
@@ -45,6 +47,6 @@ func (p *Publisher[E]) Publish(ctx context.Context, event E) (err error) {
 	if err != nil {
 		return
 	}
-	err = p.insertEvent(ctx, p.streamId, guid.New().String(), p.typeHint, data, p.expectedVersion)
+	err = p.insertEvent(ctx, guid.New().String(), p.typeHint, data, p.expectedVersion)
 	return
 }

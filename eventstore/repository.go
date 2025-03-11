@@ -54,11 +54,11 @@ func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 	return codec.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
-func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, typeHint string, data []byte, expectedVersion string) error {
+func (r *Repository[E]) insertEvent(ctx context.Context, version, typeHint string, data []byte, expectedVersion string) error {
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
-			streamId, expectedVersion)
+			r.streamId, expectedVersion)
 		var eventIDWithExpectedVersion string
 		err := row.Scan(&eventIDWithExpectedVersion)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -68,7 +68,7 @@ func (r *Repository[E]) insertEvent(ctx context.Context, streamId, version, type
 
 	_, err := r.connection.Exec(ctx,
 		"insert into events (event_id, stream_id, event_type, version, payload, created_at) values ($1, $2, $3, $4, $5, $6)",
-		guid.New(), streamId, typeHint, version, data, time.Now())
+		guid.New(), r.streamId, typeHint, version, data, time.Now())
 	return err
 }
 
