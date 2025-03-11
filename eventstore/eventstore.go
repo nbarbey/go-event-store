@@ -19,7 +19,7 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	}
 
 	repository := NewRepository[E](pool, codec.NewJSONCodecWithTypeHints[E](nil))
-	err = repository.createTableAndTrigger(ctx)
+	err = repository.CreateTableAndTrigger(ctx)
 	return &EventStore[E]{
 		Stream: NewStream[E]("default-stream", repository, &pgxlisten.Listener{}),
 	}, err

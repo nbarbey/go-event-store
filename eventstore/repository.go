@@ -31,7 +31,7 @@ func (r *Repository[E]) Stream(name string) *Repository[E] {
 	return &Repository[E]{connection: r.connection, codec: r.codec, streamId: name}
 }
 
-func (r *Repository[E]) getEvent(ctx context.Context, eventId string) (event E, err error) {
+func (r *Repository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
 	row := r.connection.QueryRow(ctx, "select event_type, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err = row.Scan(&er.EventType, &er.Payload)
@@ -54,7 +54,11 @@ func (r *Repository[E]) All(ctx context.Context) ([]E, error) {
 	return codec.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
 }
 
-func (r *Repository[E]) insertEvent(ctx context.Context, version, typeHint string, data []byte, expectedVersion string) error {
+func (r *Repository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
+	data, err := r.codec.Marshall(event)
+	if err != nil {
+		return err
+	}
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
@@ -66,13 +70,13 @@ func (r *Repository[E]) insertEvent(ctx context.Context, version, typeHint strin
 		}
 	}
 
-	_, err := r.connection.Exec(ctx,
+	_, err = r.connection.Exec(ctx,
 		"insert into events (event_id, stream_id, event_type, version, payload, created_at) values ($1, $2, $3, $4, $5, $6)",
 		guid.New(), r.streamId, typeHint, version, data, time.Now())
 	return err
 }
 
-func (r *Repository[E]) createTableAndTrigger(ctx context.Context) error {
+func (r *Repository[E]) CreateTableAndTrigger(ctx context.Context) error {
 	err := r.createEventsTable(ctx)
 	if err != nil {
 		return err

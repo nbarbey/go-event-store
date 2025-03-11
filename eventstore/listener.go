@@ -36,7 +36,7 @@ func (l *Listener[E]) Subscribe(consumer Consumer[E]) (subscription *Subscriptio
 	}
 
 	listener.Handle(l.streamId, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
-		event, err := l.getEvent(ctx, notification.Payload)
+		event, err := l.GetEvent(ctx, notification.Payload)
 		if err != nil {
 			return err
 		}
