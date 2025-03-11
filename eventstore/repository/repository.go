@@ -94,7 +94,7 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
 	return err
 }
 
-func (r *Repository) AllRows(ctx context.Context) ([]string, [][]byte, error) {
+func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, [][]byte, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
 		return nil, nil, err

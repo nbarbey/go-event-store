@@ -36,7 +36,7 @@ func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (even
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	types, payloads, err := r.AllRows(ctx)
+	types, payloads, err := r.AllTypesAndPayloads(ctx)
 	if err != nil {
 		return nil, err
 	}
