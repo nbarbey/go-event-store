@@ -36,11 +36,11 @@ func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (even
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	ers, err := r.AllRows(ctx)
+	types, payloads, err := r.AllRows(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return codec.UnmarshallAllWithType[E](r.codec, ers.types(), ers.payloads())
+	return codec.UnmarshallAllWithType[E](r.codec, types, payloads)
 }
 
 func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {

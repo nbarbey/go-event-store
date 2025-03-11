@@ -94,15 +94,15 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
 	return err
 }
 
-func (r *Repository) AllRows(ctx context.Context) (eventRows, error) {
+func (r *Repository) AllRows(ctx context.Context) ([]string, [][]byte, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
-		return nil, fmt.Errorf("CollectRows error: %w", err)
+		return nil, nil, fmt.Errorf("CollectRows error: %w", err)
 	}
 	ers := eventRows(sliceOfEventRows)
-	return ers, nil
+	return ers.types(), ers.payloads(), nil
 }
