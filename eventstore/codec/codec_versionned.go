@@ -25,3 +25,19 @@ func (v *Versioned[E]) UnmarshallWithTypeAndVersion(version string, typeHint str
 	}
 	return event, err
 }
+
+type VersionedTypedUnmarshaller[E any] interface {
+	UnmarshallWithTypeAndVersion(version string, typeHint string, payload []byte) (event E, err error)
+}
+
+func UnmarshallAllWithTypeAndVersions[E any](u VersionedTypedUnmarshaller[E], types []string, versions []string, payloads [][]byte) (events []E, err error) {
+	output := make([]E, 0)
+	for i, payload := range payloads {
+		event, err := u.UnmarshallWithTypeAndVersion(versions[i], types[i], payload)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, event)
+	}
+	return output, nil
+}

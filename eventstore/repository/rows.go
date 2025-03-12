@@ -27,3 +27,11 @@ func (ers eventRows) types() []string {
 	}
 	return types
 }
+
+func (ers eventRows) versions() []string {
+	versions := make([]string, 0)
+	for _, e := range ers {
+		versions = append(versions, e.Version.String)
+	}
+	return versions
+}

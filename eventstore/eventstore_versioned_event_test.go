@@ -38,4 +38,17 @@ func TestEventStore_custom_event_with_version(t *testing.T) {
 		assert.Eventually(t, func() bool { return received.Name == "Pan" && received.Description == "Carbon steel" }, time.Second, 10*time.Millisecond)
 		assert.NotEmpty(t, received.Version)
 	})
+
+	t.Run("publish and get all", func(t *testing.T) {
+		err := customEventStore.Publish(context.Background(), item{Name: "Air fryer", Description: "100L"})
+		require.NoError(t, err)
+		events, err := customEventStore.All(context.Background())
+		require.NoError(t, err)
+
+		assert.Len(t, events, 1)
+		received := events[0]
+		assert.Equal(t, "Air fryer", received.Name)
+		assert.Equal(t, "100L", received.Description)
+		assert.NotEmpty(t, received.Version)
+	})
 }

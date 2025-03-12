@@ -9,15 +9,15 @@ import (
 
 type TypedRepository[E any] struct {
 	*Repository
-	codec codec.Versioned[E]
+	codec *codec.Versioned[E]
 }
 
 func NewTypedRepository[E any](connection *pgxpool.Pool, c codec.TypedCodec[E]) *TypedRepository[E] {
-	return &TypedRepository[E]{Repository: NewRepository(connection), codec: codec.Versioned[E]{TypedCodec: c}}
+	return &TypedRepository[E]{Repository: NewRepository(connection), codec: &codec.Versioned[E]{TypedCodec: c}}
 }
 
 func (r *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {
-	r.codec = codec.Versioned[E]{TypedCodec: c}
+	r.codec = &codec.Versioned[E]{TypedCodec: c}
 	return r
 }
 
@@ -40,11 +40,11 @@ func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (even
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	types, payloads, err := r.AllTypesAndPayloads(ctx)
+	types, versions, payloads, err := r.AllTypesAndPayloads(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return codec.UnmarshallAllWithType[E](r.codec, types, payloads)
+	return codec.UnmarshallAllWithTypeAndVersions[E](r.codec, types, versions, payloads)
 }
 
 func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {

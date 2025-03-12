@@ -57,17 +57,17 @@ func (r *Repository) Version(ctx context.Context) (version string, err error) {
 	return
 }
 
-func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, [][]byte, error) {
+func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, []string, [][]byte, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
-		return nil, nil, fmt.Errorf("CollectRows error: %w", err)
+		return nil, nil, nil, fmt.Errorf("CollectRows error: %w", err)
 	}
 	ers := eventRows(sliceOfEventRows)
-	return ers.types(), ers.payloads(), nil
+	return ers.types(), ers.versions(), ers.payloads(), nil
 }
 
 func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
