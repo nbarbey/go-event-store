@@ -79,11 +79,11 @@ func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = r.createNotificationFunction(ctx, err)
+	err = r.createNotificationFunction(ctx)
 	if err != nil {
 		return err
 	}
-	return r.createNewEventNotificationTrigger(ctx, err)
+	return r.createNewEventNotificationTrigger(ctx)
 }
 
 func (r *Repository) createEventsTable(ctx context.Context) error {
@@ -92,15 +92,15 @@ func (r *Repository) createEventsTable(ctx context.Context) error {
 	return err
 }
 
-func (r *Repository) createNewEventNotificationTrigger(ctx context.Context, err error) error {
-	_, err = r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
+func (r *Repository) createNewEventNotificationTrigger(ctx context.Context) error {
+	_, err := r.connection.Exec(ctx, `create or replace trigger "new-event-notifier"
 								after insert on events
 								for each row execute procedure "doNotify"()`)
 	return err
 }
 
-func (r *Repository) createNotificationFunction(ctx context.Context, err error) error {
-	_, err = r.connection.Exec(ctx, `create or replace function "doNotify"()
+func (r *Repository) createNotificationFunction(ctx context.Context) error {
+	_, err := r.connection.Exec(ctx, `create or replace function "doNotify"()
   		returns trigger as $$
 			declare 
 			begin
