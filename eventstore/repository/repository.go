@@ -70,9 +70,9 @@ func (r *Repository) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
-	ers := eventRows(sliceOfEventRows)
-	return ers.ToRawEvents(), nil
+	return eventRows(sliceOfEventRows).ToRawEvents(), nil
 }
+
 func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
 	err := r.createEventsTable(ctx)
 	if err != nil {
