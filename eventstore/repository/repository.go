@@ -75,6 +75,10 @@ func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	err = r.createIndex(ctx)
+	if err != nil {
+		return err
+	}
 	err = r.createNotificationFunction(ctx, err)
 	if err != nil {
 		return err
@@ -104,5 +108,14 @@ func (r *Repository) createNotificationFunction(ctx context.Context, err error) 
   		return new;
 		end;
 		$$ language plpgsql;`)
+	return err
+}
+
+func (r *Repository) createIndex(ctx context.Context) error {
+	_, err := r.connection.Exec(ctx, `create index stream_index on events (stream_id)`)
+	if err != nil {
+		return err
+	}
+	_, err = r.connection.Exec(ctx, `create unique index event_index on events (event_id)`)
 	return err
 }
