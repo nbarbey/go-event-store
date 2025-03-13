@@ -31,5 +31,4 @@ func BenchmarkSubscriber(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = es.Publish(context2.Background(), "Hey!")
 	}
-
 }
