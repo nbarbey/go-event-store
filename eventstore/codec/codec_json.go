@@ -24,7 +24,23 @@ type JSONCodecWithTypeHints[E any] struct {
 	*UnmarshalerWithTypeHint[E]
 }
 
-func NewJSONCodecWithTypeHints[E any](unmarshalers map[string]Unmarshaller[E]) *JSONCodecWithTypeHints[E] {
+type UnmarshallerMap[E any] map[string]Unmarshaller[E]
+
+func NewUnmarshallerMap[E any]() UnmarshallerMap[E] {
+	return make(UnmarshallerMap[E], 0)
+}
+
+func (um UnmarshallerMap[E]) Add(typeHint string, unmarshaller Unmarshaller[E]) UnmarshallerMap[E] {
+	um[typeHint] = unmarshaller
+	return um
+}
+
+func (um UnmarshallerMap[E]) AddFunc(typeHint string, f UnmarshalerFunc[E]) UnmarshallerMap[E] {
+	um[typeHint] = f
+	return um
+}
+
+func NewJSONCodecWithTypeHints[E any](unmarshalers UnmarshallerMap[E]) *JSONCodecWithTypeHints[E] {
 	return &JSONCodecWithTypeHints[E]{UnmarshalerWithTypeHint: NewUnmarshalerWithTypeHints[E](JSONCodec[E]{}, unmarshalers)}
 }
 
