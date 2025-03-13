@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+type RawEvent struct {
+	EventType string
+	Version   string
+	Payload   []byte
+}
+
 type Repository struct {
 	streamId   string
 	connection *pgxpool.Pool
@@ -19,16 +25,14 @@ func NewRepository(connection *pgxpool.Pool) *Repository {
 	return &Repository{connection: connection}
 }
 
-func (r *Repository) GetPayload(ctx context.Context, eventId string) ([]byte, string, string, error) {
+func (r *Repository) GetRawEvent(ctx context.Context, eventId string) (*RawEvent, error) {
 	row := r.connection.QueryRow(ctx, "select event_type, version, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err := row.Scan(&er.EventType, &er.Version, &er.Payload)
 	if err != nil {
-		return nil, "", "", err
+		return nil, err
 	}
-	payload := er.Payload
-	typeHint := er.EventType.String
-	return payload, typeHint, er.Version.String, nil
+	return er.ToRawEvent(), nil
 }
 
 var ErrVersionMismatch = errors.New("mismatched version")
@@ -57,19 +61,18 @@ func (r *Repository) Version(ctx context.Context) (version string, err error) {
 	return
 }
 
-func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, []string, [][]byte, error) {
+func (r *Repository) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1 order by created_at desc", r.streamId)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	sliceOfEventRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[eventRow])
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("CollectRows error: %w", err)
+		return nil, fmt.Errorf("CollectRows error: %w", err)
 	}
 	ers := eventRows(sliceOfEventRows)
-	return ers.types(), ers.versions(), ers.payloads(), nil
+	return ers.ToRawEvents(), nil
 }
-
 func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
 	err := r.createEventsTable(ctx)
 	if err != nil {

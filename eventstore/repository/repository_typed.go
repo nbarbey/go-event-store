@@ -32,19 +32,39 @@ type VersionSetter interface {
 }
 
 func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
-	payload, typeHint, version, err := r.GetPayload(ctx, eventId)
+	raw, err := r.GetRawEvent(ctx, eventId)
 	if err != nil {
-		return event, err
+		return
 	}
-	return r.codec.UnmarshallWithTypeAndVersion(version, typeHint, payload)
+	return r.rawToEvent(raw)
+}
+
+func (r *TypedRepository[E]) rawToEvent(raw *RawEvent) (event E, err error) {
+	event, err = r.codec.UnmarshallWithType(raw.EventType, raw.Payload)
+	versioned, ok := any(&event).(VersionSetter)
+	if ok {
+		versioned.SetVersion(raw.Version)
+	}
+	return event, err
 }
 
 func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	types, versions, payloads, err := r.AllTypesAndPayloads(ctx)
+	raws, err := r.AllRawEvents(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return codec.UnmarshallAllWithTypeAndVersions[E](r.codec, types, versions, payloads)
+	return r.rawsToEvents(raws)
+}
+
+func (r *TypedRepository[E]) rawsToEvents(raws []*RawEvent) (events []E, err error) {
+	for _, raw := range raws {
+		event, err := r.rawToEvent(raw)
+		if err != nil {
+			return events, err
+		}
+		events = append(events, event)
+	}
+	return
 }
 
 func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {

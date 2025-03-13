@@ -10,7 +10,23 @@ type eventRow struct {
 	Payload   []byte
 }
 
+func (er *eventRow) ToRawEvent() *RawEvent {
+	return &RawEvent{
+		EventType: er.EventType.String,
+		Version:   er.Version.String,
+		Payload:   er.Payload,
+	}
+}
+
 type eventRows []eventRow
+
+func (ers eventRows) ToRawEvents() []*RawEvent {
+	raws := make([]*RawEvent, 0)
+	for _, e := range ers {
+		raws = append(raws, e.ToRawEvent())
+	}
+	return raws
+}
 
 func (ers eventRows) payloads() [][]byte {
 	payloads := make([][]byte, 0)
