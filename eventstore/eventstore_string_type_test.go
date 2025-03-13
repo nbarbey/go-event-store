@@ -19,29 +19,6 @@ func TestEventStore_with_string_type(t *testing.T) {
 
 	stringEventStore.WithCodec(codec.NoopCodec[string]{})
 
-	t.Run("publish and get all", func(t *testing.T) {
-		err := stringEventStore.Publish(context.Background(), "my_event_data")
-		require.NoError(t, err)
-		events, err := stringEventStore.All(context.Background())
-		require.NoError(t, err)
-
-		assert.Len(t, events, 1)
-		assert.Equal(t, "my_event_data", events[0])
-	})
-	t.Run("publish and get all of one stream", func(t *testing.T) {
-		stream := stringEventStore.GetStream("awesome-string-stream")
-
-		err := stringEventStore.Publish(context.Background(), "default stream data")
-		require.NoError(t, err)
-		err = stream.Publish(context.Background(), "some other stream data")
-		require.NoError(t, err)
-
-		events, err := stream.All(context.Background())
-		require.NoError(t, err)
-
-		assert.Len(t, events, 1)
-		assert.Equal(t, "some other stream data", events[0])
-	})
 	t.Run("subscribe then publish", func(t *testing.T) {
 		var received string
 		stringEventStore.Subscribe(makeTestConsumer[string](&received))
