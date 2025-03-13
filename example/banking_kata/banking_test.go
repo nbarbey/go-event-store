@@ -38,7 +38,7 @@ func TestAccount_Deposit(t *testing.T) {
 
 		a.Deposit(1)
 
-		assert.Eventually(t, func() bool { return a.PrintStatement() == "\n+1 1" }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return a.PrintStatement() == "Amount Balance\n+1 1" }, time.Second, time.Millisecond)
 	})
 
 	t.Run("deposit twice", func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestAccount_Deposit(t *testing.T) {
 		a.Deposit(1)
 		a.Deposit(1)
 
-		assert.Eventually(t, func() bool { return a.PrintStatement() == "\n+1 1\n+1 2" }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return a.PrintStatement() == "Amount Balance\n+1 1\n+1 2" }, time.Second, time.Millisecond)
 	})
 
 	t.Run("deposit and withdraw", func(t *testing.T) {
@@ -60,7 +60,7 @@ func TestAccount_Deposit(t *testing.T) {
 		a.Deposit(1)
 		a.Withdraw(1)
 
-		assert.Eventually(t, func() bool { return a.PrintStatement() == "\n+1 1\n-1 0" }, time.Second, time.Millisecond)
+		assert.Eventually(t, func() bool { return a.PrintStatement() == "Amount Balance\n+1 1\n-1 0" }, time.Second, time.Millisecond)
 	})
 }
 

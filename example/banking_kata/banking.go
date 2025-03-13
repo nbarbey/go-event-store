@@ -55,9 +55,10 @@ type Account struct {
 func NewAccount(eventStore *eventstore.EventStore[AccountEvent]) *Account {
 	id := guid.NewString()
 	account := &Account{
-		accountId: id,
-		balance:   0,
-		stream:    eventStore.GetStream(fmt.Sprintf("account-events-%s", id)),
+		accountId:  id,
+		balance:    0,
+		statements: "Amount Balance",
+		stream:     eventStore.GetStream(fmt.Sprintf("account-events-%s", id)),
 	}
 	account.stream.Subscribe(
 		consumer.ConsumerFunc[AccountEvent](
