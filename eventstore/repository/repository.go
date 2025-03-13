@@ -115,14 +115,14 @@ func (r *Repository) createNotificationFunction(ctx context.Context) error {
 }
 
 func (r *Repository) createIndex(ctx context.Context) error {
-	_, err := r.connection.Exec(ctx, `create index stream_index on events (stream_id)`)
+	_, err := r.connection.Exec(ctx, `create index if not exists stream_index on events (stream_id)`)
 	if err != nil {
 		return err
 	}
-	_, err = r.connection.Exec(ctx, `create index stream_version_index on events (stream_id, version)`)
+	_, err = r.connection.Exec(ctx, `create index if not exists stream_version_index on events (stream_id, version)`)
 	if err != nil {
 		return err
 	}
-	_, err = r.connection.Exec(ctx, `create unique index stream_event_index on events (event_id, stream_id)`)
+	_, err = r.connection.Exec(ctx, `create unique index if not exists stream_event_index on events (event_id, stream_id)`)
 	return err
 }

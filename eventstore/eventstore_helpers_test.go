@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/nbarbey/go-event-store/eventstore/consumer"
-	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"log"
-	"testing"
 	"time"
 )
 
@@ -24,16 +22,18 @@ func (c *testPostgresContainer) Cancel() {
 	}
 }
 
-func (c *testPostgresContainer) Port(t *testing.T) int {
+func (c *testPostgresContainer) Port() int {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	p, err := c.PostgresContainer.MappedPort(ctx, "5432")
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
 	return p.Int()
 }
 
-func (c *testPostgresContainer) ConnectionString(t *testing.T, options string) string {
-	return fmt.Sprintf("postgres://%s:%s@127.0.0.1:%d/events?%s", c.user, c.password, c.Port(t), options)
+func (c *testPostgresContainer) ConnectionString(options string) string {
+	return fmt.Sprintf("postgres://%s:%s@127.0.0.1:%d/events?%s", c.user, c.password, c.Port(), options)
 }
 func runTestContainer() (*testPostgresContainer, error) {
 	user, password := "postgres", "password"

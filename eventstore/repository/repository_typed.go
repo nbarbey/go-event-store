@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/nbarbey/go-event-store/eventstore/consumer"
@@ -12,8 +13,13 @@ type TypedRepository[E any] struct {
 	codec *codec.Versioned[E]
 }
 
-func NewTypedRepository[E any](connection *pgxpool.Pool, c codec.TypedCodec[E]) *TypedRepository[E] {
-	return &TypedRepository[E]{Repository: NewRepository(connection), codec: &codec.Versioned[E]{TypedCodec: c}}
+func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.TypedCodec[E]) (*TypedRepository[E], error) {
+	pool, err := pgxpool.New(ctx, connStr)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
+	}
+
+	return &TypedRepository[E]{Repository: NewRepository(pool), codec: &codec.Versioned[E]{TypedCodec: c}}, nil
 }
 
 func (r *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {

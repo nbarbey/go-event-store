@@ -2,10 +2,8 @@ package eventstore
 
 import (
 	"context"
-	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
-	repository2 "github.com/nbarbey/go-event-store/eventstore/repository"
+	repository "github.com/nbarbey/go-event-store/eventstore/repository"
 )
 
 type EventStore[E any] struct {
@@ -13,15 +11,13 @@ type EventStore[E any] struct {
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
-	pool, err := pgxpool.New(ctx, connStr)
+	r, err := repository.NewTypedRepository[E](context.Background(), connStr, codec.NewJSONCodecWithTypeHints[E](nil))
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect to database: %w", err)
+		return nil, err
 	}
-
-	repository := repository2.NewTypedRepository[E](pool, codec.NewJSONCodecWithTypeHints[E](nil))
-	err = repository.CreateTableAndTrigger(ctx)
+	err = r.CreateTableAndTrigger(ctx)
 	return &EventStore[E]{
-		Stream: NewStream[E]("default-stream", repository),
+		Stream: NewStream[E]("default-stream", r),
 	}, err
 }
 

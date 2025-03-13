@@ -13,7 +13,7 @@ func TestEventStore_with_custom_events(t *testing.T) {
 	type MyEvent struct {
 		Name string
 	}
-	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString(t, "search_path=my_events"))
+	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString("search_path=my_events"))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {
