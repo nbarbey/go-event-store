@@ -58,7 +58,7 @@ func (r *Repository) Version(ctx context.Context) (version string, err error) {
 }
 
 func (r *Repository) AllTypesAndPayloads(ctx context.Context) ([]string, []string, [][]byte, error) {
-	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1", r.streamId)
+	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1 order by created_at desc", r.streamId)
 	if err != nil {
 		return nil, nil, nil, err
 	}
