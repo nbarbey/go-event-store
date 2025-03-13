@@ -119,6 +119,10 @@ func (r *Repository) createIndex(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.connection.Exec(ctx, `create unique index event_index on events (event_id)`)
+	_, err = r.connection.Exec(ctx, `create index stream_version_index on events (stream_id, version)`)
+	if err != nil {
+		return err
+	}
+	_, err = r.connection.Exec(ctx, `create unique index stream_event_index on events (event_id, stream_id)`)
 	return err
 }
