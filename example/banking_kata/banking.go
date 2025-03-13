@@ -14,14 +14,13 @@ type Bank struct {
 }
 
 func NewBank(es *eventstore.EventStore[AccountEvent]) *Bank {
-	es.WithCodec(codec.NewJSONCodecWithTypeHints[AccountEvent](map[string]codec.Unmarshaller[AccountEvent]{
-		"DepositEvent": codec.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
+	es.WithCodec(codec.NewJSONCodecWithTypeHints[AccountEvent](codec.NewUnmarshallerMap[AccountEvent]().
+		AddFunc("DepositEvent", func(payload []byte) (event AccountEvent, err error) {
 			return codec.BuildJSONUnmarshalFunc[DepositEvent]()(payload)
-		}),
-		"WithdrawEvent": codec.UnmarshalerFunc[AccountEvent](func(payload []byte) (event AccountEvent, err error) {
+		}).
+		AddFunc("WithdrawEvent", func(payload []byte) (event AccountEvent, err error) {
 			return codec.BuildJSONUnmarshalFunc[WithdrawEvent]()(payload)
-		}),
-	}))
+		})))
 	return &Bank{eventStore: es}
 }
 
