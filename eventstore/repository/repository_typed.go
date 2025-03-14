@@ -22,48 +22,54 @@ func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.Type
 	return &TypedRepository[E]{Repository: NewRepository(pool), codec: &codec.Versioned[E]{TypedCodec: c}}, nil
 }
 
-func (r *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {
-	r.codec = &codec.Versioned[E]{TypedCodec: c}
-	return r
+func (tr *TypedRepository[E]) CreateTableAndTrigger(ctx context.Context) (*TypedRepository[E], error) {
+	r, err := tr.Repository.CreateTableAndTrigger(ctx)
+	return &TypedRepository[E]{Repository: r, codec: tr.codec}, err
 }
 
-func (r *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
-	return &TypedRepository[E]{Repository: NewRepository(r.connection).Stream(name), codec: r.codec}
+func (tr *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {
+	tr.codec = &codec.Versioned[E]{TypedCodec: c}
+	return tr
+}
+
+func (tr *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
+	return &TypedRepository[E]{Repository: NewRepository(tr.connection).Stream(name), codec: tr.codec}
 }
 
 type VersionSetter interface {
 	SetVersion(version string)
 }
 
-func (r *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
-	raw, err := r.GetRawEvent(ctx, eventId)
+func (tr *TypedRepository[E]) GetEvent(ctx context.Context, eventId string) (event E, err error) {
+	raw, err := tr.GetRawEvent(ctx, eventId)
 	if err != nil {
 		return
 	}
-	return r.rawToEvent(raw)
+	return tr.rawToEvent(raw)
 }
 
-func (r *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
-	raws, err := r.AllRawEvents(ctx)
+func (tr *TypedRepository[E]) All(ctx context.Context) ([]E, error) {
+	raws, err := tr.AllRawEvents(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return r.rawsToEvents(raws)
+	return tr.rawsToEvents(raws)
 }
 
-func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
-	data, err := r.codec.Marshall(event)
+func (tr *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint string, event E, expectedVersion string) error {
+	data, err := tr.codec.Marshall(event)
 	if err != nil {
 		return err
 	}
-	return r.InsertRawEvent(ctx, RawEvent{EventType: typeHint, Version: version, Payload: data}, expectedVersion)
+	_, err = tr.InsertRawEvent(ctx, RawEvent{EventType: typeHint, Version: version, Payload: data}, expectedVersion)
+	return err
 }
 
-func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {
-	listener := NewListener(r.streamId, r.connection)
+func (tr *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {
+	listener := NewListener(tr.streamId, tr.connection)
 
 	listener.Handle(func(ctx context.Context, eventId string) error {
-		event, err := r.GetEvent(ctx, eventId)
+		event, err := tr.GetEvent(ctx, eventId)
 		if err != nil {
 			return err
 		}
@@ -74,8 +80,8 @@ func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Liste
 	return listener
 }
 
-func (r *TypedRepository[E]) rawToEvent(raw *RawEvent) (event E, err error) {
-	event, err = r.codec.UnmarshallWithType(raw.EventType, raw.Payload)
+func (tr *TypedRepository[E]) rawToEvent(raw *RawEvent) (event E, err error) {
+	event, err = tr.codec.UnmarshallWithType(raw.EventType, raw.Payload)
 	versioned, ok := any(&event).(VersionSetter)
 	if ok {
 		versioned.SetVersion(raw.Version)
@@ -83,9 +89,9 @@ func (r *TypedRepository[E]) rawToEvent(raw *RawEvent) (event E, err error) {
 	return event, err
 }
 
-func (r *TypedRepository[E]) rawsToEvents(raws []*RawEvent) (events []E, err error) {
+func (tr *TypedRepository[E]) rawsToEvents(raws []*RawEvent) (events []E, err error) {
 	for _, raw := range raws {
-		event, err := r.rawToEvent(raw)
+		event, err := tr.rawToEvent(raw)
 		if err != nil {
 			return events, err
 		}

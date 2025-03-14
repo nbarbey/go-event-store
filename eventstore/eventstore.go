@@ -15,9 +15,9 @@ func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], 
 	if err != nil {
 		return nil, err
 	}
-	err = r.CreateTableAndTrigger(ctx)
+	tr, err := r.CreateTableAndTrigger(ctx)
 	return &EventStore[E]{
-		Stream: NewStream[E]("default-stream", r),
+		Stream: NewStream[E]("default-stream", tr),
 	}, err
 }
 

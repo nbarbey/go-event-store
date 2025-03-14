@@ -22,7 +22,7 @@ type Repository struct {
 }
 
 func NewRepository(connection *pgxpool.Pool) *Repository {
-	return &Repository{connection: connection}
+	return &Repository{streamId: "default-stream", connection: connection}
 }
 
 func (r *Repository) Stream(name string) *Repository {
@@ -30,10 +30,15 @@ func (r *Repository) Stream(name string) *Repository {
 	return r
 }
 
+var ErrEventNotFound = errors.New("event not found")
+
 func (r *Repository) GetRawEvent(ctx context.Context, eventId string) (*RawEvent, error) {
 	row := r.connection.QueryRow(ctx, "select event_type, version, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow
 	err := row.Scan(&er.EventType, &er.Version, &er.Payload)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrEventNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +47,7 @@ func (r *Repository) GetRawEvent(ctx context.Context, eventId string) (*RawEvent
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
-func (r *Repository) InsertRawEvent(ctx context.Context, raw RawEvent, expectedVersion string) error {
+func (r *Repository) InsertRawEvent(ctx context.Context, raw RawEvent, expectedVersion string) (string, error) {
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
@@ -50,14 +55,15 @@ func (r *Repository) InsertRawEvent(ctx context.Context, raw RawEvent, expectedV
 		var eventIDWithExpectedVersion string
 		err := row.Scan(&eventIDWithExpectedVersion)
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrVersionMismatch
+			return "", ErrVersionMismatch
 		}
 	}
 
+	eventId := guid.New().String()
 	_, err := r.connection.Exec(ctx,
 		"insert into events (event_id, stream_id, event_type, version, payload, created_at) values ($1, $2, $3, $4, $5, $6)",
-		guid.New(), r.streamId, raw.EventType, raw.Version, raw.Payload, time.Now())
-	return err
+		eventId, r.streamId, raw.EventType, raw.Version, raw.Payload, time.Now())
+	return eventId, err
 }
 
 func (r *Repository) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
@@ -72,20 +78,20 @@ func (r *Repository) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
 	return eventRows(sliceOfEventRows).ToRawEvents(), nil
 }
 
-func (r *Repository) CreateTableAndTrigger(ctx context.Context) error {
+func (r *Repository) CreateTableAndTrigger(ctx context.Context) (*Repository, error) {
 	err := r.createEventsTable(ctx)
 	if err != nil {
-		return err
+		return r, err
 	}
 	err = r.createIndex(ctx)
 	if err != nil {
-		return err
+		return r, err
 	}
 	err = r.createNotificationFunction(ctx)
 	if err != nil {
-		return err
+		return r, err
 	}
-	return r.createNewEventNotificationTrigger(ctx)
+	return r, r.createNewEventNotificationTrigger(ctx)
 }
 
 func (r *Repository) createEventsTable(ctx context.Context) error {
