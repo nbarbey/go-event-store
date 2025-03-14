@@ -55,6 +55,21 @@ func TestRepository(t *testing.T) {
 		assert.Equal(t, "1", event.Version)
 		assert.Equal(t, []byte("coucou"), event.Payload)
 	})
+
+	t.Run("Insert and Get All", func(t *testing.T) {
+		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
+		require.NoError(t, err)
+
+		r.Stream("all")
+		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
+		require.NoError(t, err)
+		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut !")}, "")
+		require.NoError(t, err)
+		events, err := r.AllRawEvents(context.Background())
+		require.NoError(t, err)
+
+		assert.Len(t, events, 2)
+	})
 }
 
 type testPostgresContainer struct {
