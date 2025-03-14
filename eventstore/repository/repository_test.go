@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nbarbey/go-event-store/eventstore/consumer"
 	"github.com/nbarbey/go-event-store/eventstore/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,10 +96,4 @@ func runTestContainer() (*testPostgresContainer, error) {
 	)
 
 	return &testPostgresContainer{user: user, password: password, PostgresContainer: postgresContainer}, err
-}
-
-func makeTestConsumer[E any](received *E) consumer.ConsumerFunc[E] {
-	return func(e E) {
-		*received = e
-	}
 }
