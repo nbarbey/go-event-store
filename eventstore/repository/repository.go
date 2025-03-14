@@ -25,6 +25,11 @@ func NewRepository(connection *pgxpool.Pool) *Repository {
 	return &Repository{connection: connection}
 }
 
+func (r *Repository) Stream(name string) *Repository {
+	r.streamId = name
+	return r
+}
+
 func (r *Repository) GetRawEvent(ctx context.Context, eventId string) (*RawEvent, error) {
 	row := r.connection.QueryRow(ctx, "select event_type, version, payload from events where event_id=$1 and stream_id=$2", eventId, r.streamId)
 	var er eventRow

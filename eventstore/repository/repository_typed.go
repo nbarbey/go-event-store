@@ -28,9 +28,7 @@ func (r *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E
 }
 
 func (r *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
-	repository := NewRepository(r.connection)
-	repository.streamId = name
-	return &TypedRepository[E]{Repository: repository, codec: r.codec}
+	return &TypedRepository[E]{Repository: NewRepository(r.connection).Stream(name), codec: r.codec}
 }
 
 type VersionSetter interface {
