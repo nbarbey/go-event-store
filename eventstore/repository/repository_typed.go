@@ -78,7 +78,7 @@ func (r *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint 
 	if err != nil {
 		return err
 	}
-	return r.InsertPayload(ctx, version, typeHint, expectedVersion, data)
+	return r.InsertRawEvent(ctx, RawEvent{EventType: typeHint, Version: version, Payload: data}, expectedVersion)
 }
 
 func (r *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {

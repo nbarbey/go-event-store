@@ -37,7 +37,7 @@ func (r *Repository) GetRawEvent(ctx context.Context, eventId string) (*RawEvent
 
 var ErrVersionMismatch = errors.New("mismatched version")
 
-func (r *Repository) InsertPayload(ctx context.Context, version string, typeHint string, expectedVersion string, data []byte) error {
+func (r *Repository) InsertRawEvent(ctx context.Context, raw RawEvent, expectedVersion string) error {
 	if expectedVersion != "" {
 		row := r.connection.QueryRow(ctx,
 			"select event_id from events where stream_id=$1 and version=$2",
@@ -51,7 +51,7 @@ func (r *Repository) InsertPayload(ctx context.Context, version string, typeHint
 
 	_, err := r.connection.Exec(ctx,
 		"insert into events (event_id, stream_id, event_type, version, payload, created_at) values ($1, $2, $3, $4, $5, $6)",
-		guid.New(), r.streamId, typeHint, version, data, time.Now())
+		guid.New(), r.streamId, raw.EventType, raw.Version, raw.Payload, time.Now())
 	return err
 }
 
