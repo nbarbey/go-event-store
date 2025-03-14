@@ -60,12 +60,6 @@ func (r *Repository) InsertRawEvent(ctx context.Context, raw RawEvent, expectedV
 	return err
 }
 
-func (r *Repository) Version(ctx context.Context) (version string, err error) {
-	row := r.connection.QueryRow(ctx, "select version from events where stream_id = $1 order by created_at desc limit 1", r.streamId)
-	err = row.Scan(&version)
-	return
-}
-
 func (r *Repository) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
 	rows, err := r.connection.Query(ctx, "select event_id, event_type, version, stream_id, payload from events where stream_id=$1 order by created_at desc", r.streamId)
 	if err != nil {

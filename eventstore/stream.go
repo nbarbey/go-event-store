@@ -1,7 +1,6 @@
 package eventstore
 
 import (
-	"context"
 	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/nbarbey/go-event-store/eventstore/repository"
 )
@@ -26,8 +25,4 @@ func (s Stream[E]) GetStream(name string) *Stream[E] {
 
 func (s Stream[E]) WithCodec(codec codec.TypedCodec[E]) *Stream[E] {
 	return NewStream[E](s.name, s.Listener.TypedRepository.WithCodec(codec))
-}
-
-func (s Stream[E]) Version(ctx context.Context) (string, error) {
-	return s.Listener.TypedRepository.Version(ctx)
 }
