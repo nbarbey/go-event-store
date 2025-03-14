@@ -56,7 +56,7 @@ func TestRepository(t *testing.T) {
 		assert.Equal(t, []byte("coucou"), event.Payload)
 	})
 
-	t.Run("Insert and Get All", func(t *testing.T) {
+	t.Run("Insert and Get All in Stream", func(t *testing.T) {
 		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
 		require.NoError(t, err)
 
@@ -69,6 +69,24 @@ func TestRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Len(t, events, 2)
+	})
+	t.Run("Insert with unexpected version", func(t *testing.T) {
+		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
+		require.NoError(t, err)
+
+		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "bad")
+		assert.ErrorIs(t, err, repository.ErrVersionMismatch)
+	})
+	t.Run("Insert with expected version", func(t *testing.T) {
+		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
+		require.NoError(t, err)
+
+		eventId, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
+		assert.NoError(t, err)
+		event, err := r.GetRawEvent(context.Background(), eventId)
+		expectedVersion := event.Version
+		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut tout le monde")}, expectedVersion)
+		assert.NoError(t, err)
 	})
 }
 
