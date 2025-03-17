@@ -26,3 +26,20 @@ func BenchmarkJSONCodec_Marshall(b *testing.B) {
 		_, _ = c.Marshall(soldAMercedesForChristmas)
 	}
 }
+
+func BenchmarkJSONCodec_Marshall_big(b *testing.B) {
+	c := codec.NewJSONCodec[largeEvent]()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = c.Marshall(bigBlaBla)
+	}
+}
+
+func BenchmarkJSONCodec_MarshallUnmarshal_big(b *testing.B) {
+	c := codec.NewJSONCodec[largeEvent]()
+
+	for i := 0; i < b.N; i++ {
+		payload, _ := c.Marshall(bigBlaBla)
+		_, _ = c.Unmarshall(payload)
+	}
+}
