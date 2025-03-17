@@ -8,28 +8,28 @@ import (
 	"github.com/jackc/pgxlisten"
 )
 
-type Listener struct {
+type PostgresListener struct {
 	streamId string
 	listener *pgxlisten.Listener
 }
 
-func NewListener(streamId string, connection *pgxpool.Pool) *Listener {
+func NewPostgresListener(streamId string, connection *pgxpool.Pool) *PostgresListener {
 	listener := pgxlisten.Listener{}
 	listener.Connect = func(ctx context.Context) (*pgx.Conn, error) {
 		conn, err := connection.Acquire(ctx)
 		return conn.Conn(), err
 	}
-	return &Listener{streamId: streamId, listener: &listener}
+	return &PostgresListener{streamId: streamId, listener: &listener}
 }
 
 type handler func(ctx context.Context, eventID string) error
 
-func (t *Listener) Handle(h handler) {
+func (t *PostgresListener) Handle(h handler) {
 	t.listener.Handle(t.streamId, pgxlisten.HandlerFunc(func(ctx context.Context, notification *pgconn.Notification, conn *pgx.Conn) error {
 		return h(ctx, notification.Payload)
 	}))
 }
 
-func (t *Listener) Listen(ctx context.Context) error {
+func (t *PostgresListener) Listen(ctx context.Context) error {
 	return t.listener.Listen(ctx)
 }

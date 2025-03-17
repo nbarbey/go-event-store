@@ -73,8 +73,8 @@ func (tr *TypedRepository[E]) InsertEvent(ctx context.Context, version, typeHint
 	return err
 }
 
-func (tr *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *Listener {
-	listener := NewListener(tr.streamId, tr.connection)
+func (tr *TypedRepository[E]) BuildListener(consumer consumer.Consumer[E]) *PostgresListener {
+	listener := NewPostgresListener(tr.streamId, tr.connection)
 
 	listener.Handle(func(ctx context.Context, eventId string) error {
 		event, err := tr.GetEvent(ctx, eventId)
