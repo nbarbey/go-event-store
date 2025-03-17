@@ -21,13 +21,15 @@ type Postgres struct {
 	connection *pgxpool.Pool
 }
 
-func NewPostgres(ctx context.Context, connection *pgxpool.Pool) (*Postgres, error) {
-	p := &Postgres{streamId: "default-stream", connection: connection}
-	_, err := p.CreateTableAndTrigger(ctx)
+func NewPostgres(ctx context.Context, connStr string) (*Postgres, error) {
+	connection, err := pgxpool.New(ctx, connStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
-	return p, nil
+
+	p := &Postgres{streamId: "default-stream", connection: connection}
+	_, err = p.CreateTableAndTrigger(ctx)
+	return p, err
 }
 
 func (r *Postgres) Stream(name string) Repository {

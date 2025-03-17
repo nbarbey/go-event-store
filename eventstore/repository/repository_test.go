@@ -3,7 +3,6 @@ package repository_test
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nbarbey/go-event-store/eventstore/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,9 +30,7 @@ func TestMain(m *testing.M) {
 
 func TestPostgres(t *testing.T) {
 	connectionString := postgresContainer.ConnectionString("search_path=string_events")
-	pool, err := pgxpool.New(context.Background(), connectionString)
-	require.NoError(t, err)
-	newPostgres, err := repository.NewPostgres(context.Background(), pool)
+	newPostgres, err := repository.NewPostgres(context.Background(), connectionString)
 	require.NoError(t, err)
 	r, err := newPostgres.CreateTableAndTrigger(context.Background())
 	require.NoError(t, err)

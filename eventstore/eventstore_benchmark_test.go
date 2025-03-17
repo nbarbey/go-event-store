@@ -10,7 +10,8 @@ import (
 )
 
 func BenchmarkPublisher(b *testing.B) {
-	typedRepository, err := repository.NewTypedRepository[string](context2.Background(), postgresContainer.ConnectionString("search_path=string_events"), codec.NoopCodec[string]{})
+	pg, err := repository.NewPostgres(context2.Background(), postgresContainer.ConnectionString("search_path=string_events"))
+	typedRepository := repository.NewTypedRepository[string](pg, codec.NoopCodec[string]{})
 	if err != nil {
 		panic(err)
 	}
@@ -28,10 +29,12 @@ type benchEvent struct {
 }
 
 func BenchmarkPublisherJSON(b *testing.B) {
-	typedRepository, err := repository.NewTypedRepository[benchEvent](context2.Background(), postgresContainer.ConnectionString("search_path=string_events"), codec.NewJSONCodecWithTypeHints[benchEvent](nil))
+	pg, err := repository.NewPostgres(context2.Background(), postgresContainer.ConnectionString("search_path=string_events"))
 	if err != nil {
 		panic(err)
 	}
+	typedRepository := repository.NewTypedRepository[benchEvent](pg, codec.NewJSONCodecWithTypeHints[benchEvent](nil))
+
 	publisher := eventstore.NewPublisher[benchEvent]("my_stream", typedRepository)
 
 	for i := 0; i < b.N; i++ {
@@ -40,10 +43,11 @@ func BenchmarkPublisherJSON(b *testing.B) {
 }
 
 func BenchmarkPublisherGob(b *testing.B) {
-	typedRepository, err := repository.NewTypedRepository[benchEvent](context2.Background(), postgresContainer.ConnectionString("search_path=string_events"), codec.NewGobCodecWithTypeHints[benchEvent](nil))
+	pg, err := repository.NewPostgres(context2.Background(), postgresContainer.ConnectionString("search_path=string_events"))
 	if err != nil {
 		panic(err)
 	}
+	typedRepository := repository.NewTypedRepository[benchEvent](pg, codec.NewJSONCodecWithTypeHints[benchEvent](nil))
 	publisher := eventstore.NewPublisher[benchEvent]("my_stream", typedRepository)
 
 	for i := 0; i < b.N; i++ {

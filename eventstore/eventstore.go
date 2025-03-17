@@ -11,7 +11,8 @@ type EventStore[E any] struct {
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
-	r, err := repository.NewTypedRepository[E](ctx, connStr, codec.NewGobCodecWithTypeHints[E](nil))
+	pg, err := repository.NewPostgres(ctx, connStr)
+	r := repository.NewTypedRepository[E](pg, codec.NewGobCodecWithTypeHints[E](nil))
 	return NewEventStoreFromRepository(r), err
 }
 
