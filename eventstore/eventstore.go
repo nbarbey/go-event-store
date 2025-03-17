@@ -11,7 +11,7 @@ type EventStore[E any] struct {
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
-	r, err := repository.NewTypedRepository[E](ctx, connStr, codec.NewJSONCodecWithTypeHints[E](nil))
+	r, err := repository.NewTypedRepository[E](ctx, connStr, codec.NewGobCodecWithTypeHints[E](nil))
 	return NewEventStoreFromRepository(r), err
 }
 

@@ -97,7 +97,7 @@ func (r *Postgres) CreateTableAndTrigger(ctx context.Context) (*Postgres, error)
 
 func (r *Postgres) createEventsTable(ctx context.Context) error {
 	_, err := r.connection.Exec(ctx,
-		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload text, created_at timestamp )")
+		"create table if not exists events (event_id text, stream_id text, event_type text, version text, payload bytea, created_at timestamp )")
 	return err
 }
 
