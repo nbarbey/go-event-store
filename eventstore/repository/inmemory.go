@@ -35,7 +35,7 @@ func (i *InMemory) Handle(h handler) {
 	i.handler = h
 }
 
-func (i *InMemory) Listen(ctx context.Context) error {
+func (i *InMemory) Listen(_ context.Context) error {
 	return nil
 }
 
@@ -51,10 +51,8 @@ func NewInMemory() *InMemory {
 }
 
 func (i *InMemory) Stream(name string) Repository {
-	return &InMemory{
-		events:   make(map[string][]internalEvent),
-		streamId: name,
-	}
+	i.streamId = name
+	return i
 }
 
 func (i *InMemory) GetRawEvent(_ context.Context, eventId string) (*RawEvent, error) {
