@@ -18,3 +18,11 @@ func TestGobCodec_Marshall_UnmarshallWithType(t *testing.T) {
 			return codec.BuildGobUnmarshalFunc[carRepaired]()(payload)
 		})))
 }
+
+func BenchmarkGobCodec_Marshall(b *testing.B) {
+	c := codec.NewGobCodec[carSold]()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = c.Marshall(soldAMercedesForChristmas)
+	}
+}

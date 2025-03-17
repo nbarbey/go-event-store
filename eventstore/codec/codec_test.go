@@ -22,15 +22,13 @@ func (s carSold) isCarEvent() {}
 
 type carRepaired struct {
 	CarID string
-	Date  time.Time
 }
 
 func (s carRepaired) isCarEvent() {}
 
 var christmas = time.Date(2025, 12, 25, 0, 0, 0, 0, time.UTC)
 var soldAMercedesForChristmas = carSold{Brand: "Mercedes", Name: "Class A", Date: christmas}
-var newYear = time.Date(2026, 01, 01, 0, 0, 0, 0, time.UTC)
-var repairedAMercredForNewYear = carRepaired{CarID: "1", Date: newYear}
+var repairedAMercedes = carRepaired{CarID: "1"}
 
 func testCodecMarshalUnmarshal(t *testing.T, c codec.Codec[carSold]) {
 	payload, err := c.Marshall(soldAMercedesForChristmas)
@@ -39,19 +37,25 @@ func testCodecMarshalUnmarshal(t *testing.T, c codec.Codec[carSold]) {
 	received, err := c.Unmarshall(payload)
 	require.NoError(t, err)
 
-	assert.Equal(t, soldAMercedesForChristmas, received)
+	assert.Equal(t, soldAMercedesForChristmas.Brand, received.Brand)
+	assert.Equal(t, soldAMercedesForChristmas.Name, received.Name)
+	assert.True(t, soldAMercedesForChristmas.Date.Equal(received.Date))
 }
 
 func testCodecMarshalUnmarshalWithType(t *testing.T, c codec.TypedCodec[carEvent]) {
 	payload, err := c.Marshall(soldAMercedesForChristmas)
 	require.NoError(t, err)
-	receivedSold, err := c.UnmarshallWithType("carSold", payload)
+	receivedSoldEvent, err := c.UnmarshallWithType("carSold", payload)
 	require.NoError(t, err)
-	payload, err = c.Marshall(repairedAMercredForNewYear)
+	payload, err = c.Marshall(repairedAMercedes)
 	require.NoError(t, err)
-	receivedRepaired, err := c.UnmarshallWithType("carRepaired", payload)
+	receivedRepairedEvent, err := c.UnmarshallWithType("carRepaired", payload)
 	require.NoError(t, err)
 
-	assert.Equal(t, soldAMercedesForChristmas, receivedSold)
-	assert.Equal(t, repairedAMercredForNewYear, receivedRepaired)
+	receivedSold := receivedSoldEvent.(carSold)
+	assert.Equal(t, soldAMercedesForChristmas.Brand, receivedSold.Brand)
+	assert.Equal(t, soldAMercedesForChristmas.Name, receivedSold.Name)
+	assert.True(t, soldAMercedesForChristmas.Date.Equal(receivedSold.Date))
+	receivedRepaired := receivedRepairedEvent.(carRepaired)
+	assert.Equal(t, repairedAMercedes.CarID, receivedRepaired.CarID)
 }

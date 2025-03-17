@@ -18,3 +18,11 @@ func TestJSONCodec_Marshall_UnmarshallWithType(t *testing.T) {
 			return codec.BuildJSONUnmarshalFunc[carRepaired]()(payload)
 		})))
 }
+
+func BenchmarkJSONCodec_Marshall(b *testing.B) {
+	c := codec.NewJSONCodec[carSold]()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = c.Marshall(soldAMercedesForChristmas)
+	}
+}

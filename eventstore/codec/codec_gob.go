@@ -6,32 +6,44 @@ import (
 )
 
 func NewGobCodec[E any]() *GobCodec[E] {
-	return &GobCodec[E]{}
+	c := GobCodec[E]{}
+	c.encoder = gob.NewEncoder(&c.encoderBuffer)
+	c.decoder = gob.NewDecoder(&c.decoderBuffer)
+	return &c
 }
 
-type GobCodec[E any] struct{}
-
-func (GobCodec[E]) Marshall(event E) ([]byte, error) {
-	buffer := bytes.Buffer{}
-	encoder := gob.NewEncoder(&buffer)
-	err := encoder.Encode(event)
-	return buffer.Bytes(), err
+type GobCodec[E any] struct {
+	encoderBuffer bytes.Buffer
+	encoder       *gob.Encoder
+	decoderBuffer bytes.Buffer
+	decoder       *gob.Decoder
 }
 
-func (GobCodec[E]) Unmarshall(payload []byte) (event E, err error) {
-	buffer := bytes.NewBuffer(payload)
-	decoder := gob.NewDecoder(buffer)
-	err = decoder.Decode(&event)
+func (g *GobCodec[E]) Marshall(event E) ([]byte, error) {
+	err := g.encoder.Encode(event)
+	out := g.encoderBuffer.Bytes()
+	g.encoderBuffer.Reset()
+	return out, err
+}
+
+func (g *GobCodec[E]) Unmarshall(payload []byte) (event E, err error) {
+	g.decoderBuffer.Write(payload)
+	err = g.decoder.Decode(&event)
+	g.decoderBuffer.Reset()
 	return event, err
 }
 
 type GobCodecWithTypeHints[E any] struct {
-	GobCodec[E]
+	*GobCodec[E]
 	*UnmarshalerWithTypeHint[E]
 }
 
 func NewGobCodecWithTypeHints[E any](unmarshalers UnmarshallerMap[E]) *GobCodecWithTypeHints[E] {
-	return &GobCodecWithTypeHints[E]{UnmarshalerWithTypeHint: NewUnmarshalerWithTypeHints[E](GobCodec[E]{}, unmarshalers)}
+	codec := NewGobCodec[E]()
+	return &GobCodecWithTypeHints[E]{
+		GobCodec:                codec,
+		UnmarshalerWithTypeHint: NewUnmarshalerWithTypeHints[E](codec, unmarshalers),
+	}
 }
 
 func BuildGobUnmarshalFunc[E any]() UnmarshalerFunc[E] {
