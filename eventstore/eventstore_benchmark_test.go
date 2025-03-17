@@ -56,7 +56,7 @@ func BenchmarkPublisherGob(b *testing.B) {
 }
 
 func BenchmarkSubscriber(b *testing.B) {
-	es, err := eventstore.NewEventStore[string](context2.Background(), postgresContainer.ConnectionString("search_path=string_events"))
+	es, err := eventstore.NewPostgresEventStore[string](context2.Background(), postgresContainer.ConnectionString("search_path=string_events"))
 	if err != nil {
 		panic(err)
 	}

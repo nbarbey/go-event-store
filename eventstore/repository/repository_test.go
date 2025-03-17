@@ -40,6 +40,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("Insert and Get All in Stream", testInsertAndGetAllInStream(r))
 	t.Run("Insert with unexpected version", testInsertWithUnexpectedVeresion(r))
 	t.Run("Insert with expected version", testInsertWithExpectedVersion(r))
+	t.Run("listener", testListener(r))
 }
 
 func TestInMemory(t *testing.T) {
@@ -50,6 +51,30 @@ func TestInMemory(t *testing.T) {
 	t.Run("Insert and Get All in Stream", testInsertAndGetAllInStream(r))
 	t.Run("Insert with unexpected version", testInsertWithUnexpectedVeresion(r))
 	t.Run("Insert with expected version", testInsertWithExpectedVersion(r))
+	t.Run("listener", testListener(r))
+}
+
+func testListener(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
+		received := false
+		listener := r.NewListener()
+		listener.Handle(func(ctx context.Context, eventID string) error {
+			received = true
+			return nil
+		})
+		go func() {
+			err := listener.Listen(context.Background())
+			require.NoError(t, err)
+		}()
+
+		// give time for listener to be set-up properly
+		time.Sleep(10 * time.Millisecond)
+
+		_, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
+		require.NoError(t, err)
+
+		assert.Eventually(t, func() bool { return received }, time.Second, time.Millisecond)
+	}
 }
 
 func testInsertWithExpectedVersion(r repository.Repository) func(t *testing.T) {

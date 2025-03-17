@@ -10,10 +10,16 @@ type EventStore[E any] struct {
 	*Stream[E]
 }
 
-func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
+func NewPostgresEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
 	pg, err := repository.NewPostgres(ctx, connStr)
 	r := repository.NewTypedRepository[E](pg, codec.NewGobCodecWithTypeHints[E](nil))
 	return NewEventStoreFromRepository(r), err
+}
+
+func NewInMemoryEventStore[E any]() *EventStore[E] {
+	return NewEventStoreFromRepository(
+		repository.NewTypedRepository[E](
+			repository.NewInMemory(), codec.NewGobCodecWithTypeHints[E](nil)))
 }
 
 func NewEventStoreFromRepository[E any](r *repository.TypedRepository[E]) *EventStore[E] {

@@ -14,7 +14,7 @@ func TestEventStore_with_string_type(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	stringEventStore, err := eventstore.NewEventStore[string](ctx, postgresContainer.ConnectionString("search_path=string_events"))
+	stringEventStore, err := eventstore.NewPostgresEventStore[string](ctx, postgresContainer.ConnectionString("search_path=string_events"))
 	require.NoError(t, err)
 
 	stringEventStore.WithCodec(codec.NoopCodec[string]{})

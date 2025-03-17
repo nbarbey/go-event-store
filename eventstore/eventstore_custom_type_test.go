@@ -19,7 +19,7 @@ func (m *MyEvent) SetVersion(version string) {
 }
 
 func TestEventStore_with_custom_events(t *testing.T) {
-	customEventStore, err := eventstore.NewEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString("search_path=my_events"))
+	customEventStore, err := eventstore.NewPostgresEventStore[MyEvent](context.Background(), postgresContainer.ConnectionString("search_path=my_events"))
 	require.NoError(t, err)
 
 	t.Run("publish and subscribe to custom event", func(t *testing.T) {

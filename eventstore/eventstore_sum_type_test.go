@@ -31,7 +31,7 @@ type todoDeleted struct{ TodoID int }
 func (c todoDeleted) isTodoEvent() {}
 
 func TestEventStore_with_sum_type(t *testing.T) {
-	todoEventStore, err := eventstore.NewEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString("search_path=todo_events"))
+	todoEventStore, err := eventstore.NewPostgresEventStore[todoEvent](context.Background(), postgresContainer.ConnectionString("search_path=todo_events"))
 	require.NoError(t, err)
 	todoEventStore.WithCodec(codec.NewJSONCodecWithTypeHints[todoEvent](map[string]codec.Unmarshaller[todoEvent]{
 		"todoCreated": codec.UnmarshalerFunc[todoEvent](func(payload []byte) (event todoEvent, err error) {
