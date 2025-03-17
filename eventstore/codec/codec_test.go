@@ -1,6 +1,7 @@
-package codec
+package codec_test
 
 import (
+	"github.com/nbarbey/go-event-store/eventstore/codec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -31,11 +32,7 @@ var soldAMercedesForChristmas = carSold{Brand: "Mercedes", Name: "Class A", Date
 var newYear = time.Date(2026, 01, 01, 0, 0, 0, 0, time.UTC)
 var repairedAMercredForNewYear = carRepaired{CarID: "1", Date: newYear}
 
-func TestJSONCodec_Marshall_Unmarshall(t *testing.T) {
-	testCodecMarshalUnmarshal(t, NewJSONCodec[carSold]())
-}
-
-func testCodecMarshalUnmarshal(t *testing.T, c *JSONCodec[carSold]) {
+func testCodecMarshalUnmarshal(t *testing.T, c codec.Codec[carSold]) {
 	payload, err := c.Marshall(soldAMercedesForChristmas)
 	require.NoError(t, err)
 
@@ -45,17 +42,7 @@ func testCodecMarshalUnmarshal(t *testing.T, c *JSONCodec[carSold]) {
 	assert.Equal(t, soldAMercedesForChristmas, received)
 }
 
-func TestJSONCodec_Marshall_UnmarshallWithType(t *testing.T) {
-	testCodecMarshalUnmarshalWithType(t, NewJSONCodecWithTypeHints[carEvent](NewUnmarshallerMap[carEvent]().
-		AddFunc("carSold", func(payload []byte) (event carEvent, err error) {
-			return BuildJSONUnmarshalFunc[carSold]()(payload)
-		}).
-		AddFunc("carRepaired", func(payload []byte) (event carEvent, err error) {
-			return BuildJSONUnmarshalFunc[carRepaired]()(payload)
-		})))
-}
-
-func testCodecMarshalUnmarshalWithType(t *testing.T, c *JSONCodecWithTypeHints[carEvent]) {
+func testCodecMarshalUnmarshalWithType(t *testing.T, c codec.TypedCodec[carEvent]) {
 	payload, err := c.Marshall(soldAMercedesForChristmas)
 	require.NoError(t, err)
 	receivedSold, err := c.UnmarshallWithType("carSold", payload)
