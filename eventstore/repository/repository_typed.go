@@ -10,9 +10,7 @@ import (
 
 type TypedRepository[E any] struct {
 	Repository
-	codec      *codec.Versioned[E]
-	streamId   string
-	connection *pgxpool.Pool
+	codec *codec.Versioned[E]
 }
 
 func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.TypedCodec[E]) (*TypedRepository[E], error) {
@@ -25,8 +23,6 @@ func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.Type
 	return &TypedRepository[E]{
 		Repository: postgres,
 		codec:      &codec.Versioned[E]{TypedCodec: c},
-		streamId:   "default-stream",
-		connection: pool,
 	}, err
 }
 
@@ -39,8 +35,6 @@ func (tr *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
 	return &TypedRepository[E]{
 		Repository: tr.Repository.Stream(name),
 		codec:      tr.codec,
-		connection: tr.connection,
-		streamId:   name,
 	}
 }
 
