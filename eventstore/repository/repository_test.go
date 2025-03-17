@@ -33,7 +33,9 @@ func TestPostgres(t *testing.T) {
 	connectionString := postgresContainer.ConnectionString("search_path=string_events")
 	pool, err := pgxpool.New(context.Background(), connectionString)
 	require.NoError(t, err)
-	r, err := repository.NewPostgres(pool).CreateTableAndTrigger(context.Background())
+	newPostgres, err := repository.NewPostgres(context.Background(), pool)
+	require.NoError(t, err)
+	r, err := newPostgres.CreateTableAndTrigger(context.Background())
 	require.NoError(t, err)
 
 	t.Run("Get not found", testGetNotFound(r))

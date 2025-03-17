@@ -21,8 +21,12 @@ func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.Type
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
+	postgres, err := NewPostgres(ctx, pool)
+	if err != nil {
+		return nil, err
+	}
 	return &TypedRepository[E]{
-		Repository: NewPostgres(pool),
+		Repository: postgres,
 		codec:      &codec.Versioned[E]{TypedCodec: c},
 		streamId:   "default-stream",
 		connection: pool,
