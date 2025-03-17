@@ -79,6 +79,10 @@ func (r *Postgres) AllRawEvents(ctx context.Context) ([]*RawEvent, error) {
 	return eventRows(sliceOfEventRows).ToRawEvents(), nil
 }
 
+func (r *Postgres) NewListener() Listener {
+	return NewPostgresListener(r.streamId, r.connection)
+}
+
 func (r *Postgres) CreateTableAndTrigger(ctx context.Context) (*Postgres, error) {
 	err := r.createEventsTable(ctx)
 	if err != nil {

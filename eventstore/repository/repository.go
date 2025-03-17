@@ -10,6 +10,7 @@ type Repository interface {
 	GetRawEvent(ctx context.Context, eventId string) (*RawEvent, error)
 	InsertRawEvent(ctx context.Context, raw RawEvent, expectedVersion string) (string, error)
 	AllRawEvents(ctx context.Context) ([]*RawEvent, error)
+	NewListener() Listener
 }
 
 var ErrEventNotFound = errors.New("event not found")

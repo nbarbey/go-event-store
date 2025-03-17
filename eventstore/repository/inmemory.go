@@ -28,6 +28,19 @@ func (ie internalEvent) toRawEvent() (raw *RawEvent) {
 type InMemory struct {
 	events   map[string][]internalEvent
 	streamId string
+	handler  handler
+}
+
+func (i *InMemory) Handle(h handler) {
+	i.handler = h
+}
+
+func (i *InMemory) Listen(ctx context.Context) error {
+	return nil
+}
+
+func (i *InMemory) NewListener() Listener {
+	return i
 }
 
 func NewInMemory() *InMemory {
@@ -70,6 +83,9 @@ func (i *InMemory) InsertRawEvent(_ context.Context, raw RawEvent, expectedVersi
 
 	i.events[i.streamId] = append(i.events[i.streamId], newInternalEventFromRawEvent(raw, i.streamId))
 
+	if i.handler != nil {
+		_ = i.handler(context.Background(), eventId)
+	}
 	return eventId, nil
 }
 
