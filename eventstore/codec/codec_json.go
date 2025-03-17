@@ -36,8 +36,7 @@ func (um UnmarshallerMap[E]) Add(typeHint string, unmarshaller Unmarshaller[E]) 
 }
 
 func (um UnmarshallerMap[E]) AddFunc(typeHint string, f UnmarshalerFunc[E]) UnmarshallerMap[E] {
-	um[typeHint] = f
-	return um
+	return um.Add(typeHint, f)
 }
 
 func NewJSONCodecWithTypeHints[E any](unmarshalers UnmarshallerMap[E]) *JSONCodecWithTypeHints[E] {
