@@ -22,15 +22,12 @@ func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.Type
 	}
 
 	postgres, err := NewPostgres(ctx, pool)
-	if err != nil {
-		return nil, err
-	}
 	return &TypedRepository[E]{
 		Repository: postgres,
 		codec:      &codec.Versioned[E]{TypedCodec: c},
 		streamId:   "default-stream",
 		connection: pool,
-	}, nil
+	}, err
 }
 
 func (tr *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {

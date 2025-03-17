@@ -12,12 +12,13 @@ type EventStore[E any] struct {
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
 	r, err := repository.NewTypedRepository[E](ctx, connStr, codec.NewJSONCodecWithTypeHints[E](nil))
-	if err != nil {
-		return nil, err
-	}
+	return NewEventStoreFromRepository(r), err
+}
+
+func NewEventStoreFromRepository[E any](r *repository.TypedRepository[E]) *EventStore[E] {
 	return &EventStore[E]{
 		Stream: NewStream[E]("default-stream", r),
-	}, nil
+	}
 }
 
 func (e *EventStore[E]) WithCodec(codec codec.TypedCodec[E]) {
