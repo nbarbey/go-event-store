@@ -11,14 +11,13 @@ type EventStore[E any] struct {
 }
 
 func NewEventStore[E any](ctx context.Context, connStr string) (*EventStore[E], error) {
-	r, err := repository.NewTypedRepository[E](context.Background(), connStr, codec.NewJSONCodecWithTypeHints[E](nil))
+	r, err := repository.NewTypedRepository[E](ctx, connStr, codec.NewJSONCodecWithTypeHints[E](nil))
 	if err != nil {
 		return nil, err
 	}
-	tr, err := r.CreateTableAndTrigger(ctx)
 	return &EventStore[E]{
-		Stream: NewStream[E]("default-stream", tr),
-	}, err
+		Stream: NewStream[E]("default-stream", r),
+	}, nil
 }
 
 func (e *EventStore[E]) WithCodec(codec codec.TypedCodec[E]) {

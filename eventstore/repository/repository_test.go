@@ -29,23 +29,64 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestRepository(t *testing.T) {
+func TestPostgres(t *testing.T) {
 	connectionString := postgresContainer.ConnectionString("search_path=string_events")
 	pool, err := pgxpool.New(context.Background(), connectionString)
 	require.NoError(t, err)
+	r, err := repository.NewPostgres(pool).CreateTableAndTrigger(context.Background())
+	require.NoError(t, err)
 
-	t.Run("Get not found", func(t *testing.T) {
-		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
+	t.Run("Get not found", testGetNotFound(r))
+	t.Run("Insert and Get", testInsertAndGet(r))
+	t.Run("Insert and Get All in Stream", testInsertAndGetAllInStream(r))
+	t.Run("Insert with unexpected version", testInsertWithUnexpectedVeresion(r))
+	t.Run("Insert with expected version", testInsertWithExpectedVersion(r))
+}
+
+func TestInMemory(t *testing.T) {
+	r := repository.NewInMemory()
+
+	t.Run("Get not found", testGetNotFound(r))
+	t.Run("Insert and Get", testInsertAndGet(r))
+	t.Run("Insert and Get All in Stream", testInsertAndGetAllInStream(r))
+	t.Run("Insert with unexpected version", testInsertWithUnexpectedVeresion(r))
+	t.Run("Insert with expected version", testInsertWithExpectedVersion(r))
+}
+
+func testInsertWithExpectedVersion(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
+		eventId, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
+		assert.NoError(t, err)
+		event, err := r.GetRawEvent(context.Background(), eventId)
+		expectedVersion := event.Version
+		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut tout le monde")}, expectedVersion)
+		assert.NoError(t, err)
+	}
+}
+
+func testInsertWithUnexpectedVeresion(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
+		_, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "bad")
+		assert.ErrorIs(t, err, repository.ErrVersionMismatch)
+	}
+}
+
+func testInsertAndGetAllInStream(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
+		s := r.Stream("all")
+		_, err := s.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
+		require.NoError(t, err)
+		_, err = s.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut !")}, "")
+		require.NoError(t, err)
+		events, err := s.AllRawEvents(context.Background())
 		require.NoError(t, err)
 
-		_, err = r.GetRawEvent(context.Background(), "bad_id")
+		assert.Len(t, events, 2)
+	}
+}
 
-		require.ErrorIs(t, err, repository.ErrEventNotFound)
-	})
-	t.Run("Insert and Get", func(t *testing.T) {
-		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
-		require.NoError(t, err)
-
+func testInsertAndGet(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
 		eventId, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
 		require.NoError(t, err)
 		event, err := r.GetRawEvent(context.Background(), eventId)
@@ -54,40 +95,15 @@ func TestRepository(t *testing.T) {
 		assert.Equal(t, "my_type", event.EventType)
 		assert.Equal(t, "1", event.Version)
 		assert.Equal(t, []byte("coucou"), event.Payload)
-	})
+	}
+}
 
-	t.Run("Insert and Get All in Stream", func(t *testing.T) {
-		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
-		require.NoError(t, err)
+func testGetNotFound(r repository.Repository) func(t *testing.T) {
+	return func(t *testing.T) {
+		_, err := r.GetRawEvent(context.Background(), "bad_id")
 
-		r.Stream("all")
-		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
-		require.NoError(t, err)
-		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut !")}, "")
-		require.NoError(t, err)
-		events, err := r.AllRawEvents(context.Background())
-		require.NoError(t, err)
-
-		assert.Len(t, events, 2)
-	})
-	t.Run("Insert with unexpected version", func(t *testing.T) {
-		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
-		require.NoError(t, err)
-
-		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "bad")
-		assert.ErrorIs(t, err, repository.ErrVersionMismatch)
-	})
-	t.Run("Insert with expected version", func(t *testing.T) {
-		r, err := repository.NewRepository(pool).CreateTableAndTrigger(context.Background())
-		require.NoError(t, err)
-
-		eventId, err := r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("coucou")}, "")
-		assert.NoError(t, err)
-		event, err := r.GetRawEvent(context.Background(), eventId)
-		expectedVersion := event.Version
-		_, err = r.InsertRawEvent(context.Background(), repository.RawEvent{EventType: "my_type", Version: "1", Payload: []byte("salut tout le monde")}, expectedVersion)
-		assert.NoError(t, err)
-	})
+		require.ErrorIs(t, err, repository.ErrEventNotFound)
+	}
 }
 
 type testPostgresContainer struct {

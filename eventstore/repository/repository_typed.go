@@ -9,8 +9,10 @@ import (
 )
 
 type TypedRepository[E any] struct {
-	*Repository
-	codec *codec.Versioned[E]
+	Repository
+	codec      *codec.Versioned[E]
+	streamId   string
+	connection *pgxpool.Pool
 }
 
 func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.TypedCodec[E]) (*TypedRepository[E], error) {
@@ -19,12 +21,12 @@ func NewTypedRepository[E any](ctx context.Context, connStr string, c codec.Type
 		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	return &TypedRepository[E]{Repository: NewRepository(pool), codec: &codec.Versioned[E]{TypedCodec: c}}, nil
-}
-
-func (tr *TypedRepository[E]) CreateTableAndTrigger(ctx context.Context) (*TypedRepository[E], error) {
-	r, err := tr.Repository.CreateTableAndTrigger(ctx)
-	return &TypedRepository[E]{Repository: r, codec: tr.codec}, err
+	return &TypedRepository[E]{
+		Repository: NewPostgres(pool),
+		codec:      &codec.Versioned[E]{TypedCodec: c},
+		streamId:   "default-stream",
+		connection: pool,
+	}, nil
 }
 
 func (tr *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[E] {
@@ -33,7 +35,12 @@ func (tr *TypedRepository[E]) WithCodec(c codec.TypedCodec[E]) *TypedRepository[
 }
 
 func (tr *TypedRepository[E]) Stream(name string) *TypedRepository[E] {
-	return &TypedRepository[E]{Repository: NewRepository(tr.connection).Stream(name), codec: tr.codec}
+	return &TypedRepository[E]{
+		Repository: tr.Repository.Stream(name),
+		codec:      tr.codec,
+		connection: tr.connection,
+		streamId:   name,
+	}
 }
 
 type VersionSetter interface {
