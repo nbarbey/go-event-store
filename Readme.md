@@ -16,4 +16,4 @@ This code is not production ready as it has not been tested in production yet.
 
 ## example
 
-// https://github.com/nbarbey/go-event-store/blob/1f3260a2cbe64b54e77c252aba8b02e84c0e2d9d/eventstore/eventstore_example_test.go?plain=1
+https://github.com/nbarbey/go-event-store/blob/1f3260a2cbe64b54e77c252aba8b02e84c0e2d9d/eventstore/eventstore_example_test.go?plain=1
